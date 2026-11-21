@@ -1,4 +1,4 @@
-## Instruction Tuning ##
+## SFT (인스터럭션 튜닝) ##
 
 ### 1. CPT 모델의 한계 ###
 
