@@ -76,7 +76,7 @@ WSL 확장이 설치되어 있어야 한다.
 | `[METAL] ... Insufficient Memory` | `grad_checkpoint: true` 확인 (끄면 24GB 에서 OOM 이 실측됨). `batch_size: 1` |
 | 학습이 너무 느림 | M4 Pro 에서 약 190 tok/s 는 정상. `iters` 를 줄여 1 epoch 만 돌려 본다 |
 
----
+
 
 ## B. FAQ
 
@@ -104,7 +104,6 @@ WSL 확장이 설치되어 있어야 한다.
 Jupyter 는 브라우저에서 임의의 코드를 실행하는 서버다. 인터넷에 노출되면 토큰이 유출되는 순간 서버 전체가 넘어간다.
 SSH 터널은 키 인증과 암호화를 그대로 이용한다.
 
----
 
 ## C. 용어집
 
