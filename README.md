@@ -1,5 +1,3 @@
-### End to End LLM Training Pipeline ###
-
 ![](https://github.com/gnosia93/llm-train-ft/blob/main/images/llm-pipeline.jpg)
 
 * C1. 환경설정
