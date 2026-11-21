@@ -61,7 +61,7 @@ loss:  ────────────────────────�
 `데이터 만들기`
 ```bash
 cd ~/llm-ft && source .venv/bin/activate
-python 06_build_sft.py
+python build_sft.py
 ```
 
 `데이터 확인`
@@ -88,7 +88,7 @@ vllm serve Qwen/Qwen2.5-7B-Instruct --max-model-len 8192 --gpu-memory-utilizatio
 cd ~/llm-ft && source .venv/bin/activate
 python synth_qa.py --limit 50                      # 먼저 50개 청크로 품질 확인 → data/synth_qa.jsonl
 python synth_qa.py                                 # 전체 (이미 만든 청크는 건너뜀)
-python 06_build_sft.py --synth data/synth_qa.jsonl
+python build_sft.py --synth data/synth_qa.jsonl
 # 끝나면 터미널 1 의 vLLM 을 Ctrl+C 로 꺼서 GPU 를 비운다 (학습과 같이 못 씀)
 ```
 
