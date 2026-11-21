@@ -35,39 +35,16 @@ Qwen2.5 는 아래 형식을 쓰고, base 토크나이저에도 같은 template 
 
 `<|im_start|>`, `<|im_end|>` 는 단어가 아니라 **특수 토큰 하나씩**이다. 직접 확인해 보자.
 
-```python
-from transformers import AutoTokenizer
-tok = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-3B")
-msgs = [{"role": "user", "content": "파드가 뭐야?"}]
-print(tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True))
-print(tok.convert_tokens_to_ids(["<|im_start|>", "<|im_end|>", "<|endoftext|>"]))   # [151644, 151645, 151643]
-```
-
-system 메시지를 빼면 template 이 `You are a helpful assistant.` 를 자동으로 넣는다.
-**학습 때와 추론 때 system 프롬프트를 같게** 쓰는 것이 좋다.
-
-### (2) 답변 토큰에만 loss
+### 3. loss 계산 ###
 
 ```
 토큰:  <|im_start|>system ... <|im_end|> <|im_start|>user 파드가 뭐야? <|im_end|> <|im_start|>assistant │ 가장 작고 ... <|im_end|>
 loss:  ─────────────────────────────── 0 (labels = -100) ───────────────────────────────────────────── │ ████ 학습 ████████
 ```
 
-질문까지 학습하면 모델이 **질문을 만들어 내는 법**까지 배우느라 용량을 쓴다. 그리고 질문이 길고 답이 짧은
-데이터에서는 loss 의 대부분이 질문에서 나와 답변 학습이 약해진다.
-`train_sft_hf.py` 는 대화를 `{"prompt": [system, user], "completion": [assistant]}` 로 나눠서
-TRL 이 prompt 부분의 labels 를 `-100` 으로 만들게 한다 (과제 6-1 에서 직접 확인한다).
+질문까지 학습하면 모델이 **질문을 만들어 내는 법**까지 배우느라 용량을 쓴다. 그리고 질문이 길고 답이 짧은 데이터에서는 loss 의 대부분이 질문에서 나와 답변 학습이 약해진다.
+이를 방지하기 위해서 prompt 의 labels 를 `-100` 으로 설정한다.
 
-### (3) 종료 토큰 (EOS): 가장 흔한 함정
-
-| | EOS (토크나이저 / generation_config) | 대화 턴 끝 |
-|---|---|---|
-| `Qwen/Qwen2.5-3B` (base) | `<|endoftext|>` 만 | `<|im_end|>` |
-| `Qwen/Qwen2.5-3B-Instruct` | `<|im_end|>`, `<|endoftext|>` | `<|im_end|>` |
-
-base 모델로 SFT 를 하면 모델은 답변 끝에 `<|im_end|>` 를 내도록 배운다. 그런데 생성 설정의 EOS 가 `<|endoftext|>` 뿐이면
-`generate()` 는 `<|im_end|>` 를 보고도 멈추지 않는다. 그러면 **다음 턴(`user ...`)을 스스로 지어내며 계속 말한다.**
-`train_sft_hf.py` 는 저장할 때 generation_config 의 EOS 에 `<|im_end|>` 를 추가한다. vLLM 도 이 설정을 따른다.
 
 ## 6.3 지시 데이터 설계
 
