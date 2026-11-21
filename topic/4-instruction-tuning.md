@@ -21,8 +21,8 @@ SFT 데이터의 양(수천 개)은 CPT 데이터(120만 토큰)보다 훨씬 �
 
 ### 2. chat template: 대화를 하나의 텍스트로 만드는 규칙
 
-모델은 결국 토큰 열만 본다. 역할(system / user / assistant)은 특수 토큰으로 구분한다.
-Qwen2.5 는 아래 형식을 쓴다 (base 토크나이저에도 같은 template 이 들어 있다. 확인함).
+결국 모델이 입력으로 받는 것은 단순한 토큰들의 나열(토큰 열)뿐이며, 역할(system / user / assistant)은 특수 토큰으로 구분한다.
+Qwen2.5 는 아래 형식을 쓰고, base 토크나이저에도 같은 template 이 있다.
 
 ```
 <|im_start|>system
