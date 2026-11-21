@@ -5,5 +5,6 @@
 
 * [C2. 데이터 전처리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/2-data-preprocessing.md)
 
+* [C3. 1단계 - CPT (Continued Pre-Training): 쿠버네티스 배우기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/3-cpt-training.md)
 
-* [C3. 1단계 - CPT (Continued Pre-Training): 쿠버네티스 배우기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/4-cpt-training.md)
+* [C4. 2단계 - SFT (Instruction Tunning) 대화 스킬 배우기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/4-sft-training.md)
