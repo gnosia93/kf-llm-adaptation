@@ -1,4 +1,4 @@
-## 모듈 4. 계속 사전학습(CPT) ##
+## 계속 사전학습(Continue Pre Training / CPT) ##
 
 
 ### 1. 학습 설정 ###
