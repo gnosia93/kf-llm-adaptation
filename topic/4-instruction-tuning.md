@@ -59,30 +59,13 @@ loss:  ────────────────────────�
 * 전체 용어 122개 중 18개(15%)는 이번 학습에서 의도적으로 제외하엿다. 모델이 이 18개의 질문에도 잘 대답한다면, 단순히 문답을 외운 것이 아니라 앞 단계에서 배운 지식을 스스로 꺼내어 활용하는 법을 터득했다는 증거이다.
 
 
-
-### 5. 데이터 만들기 ###
-
-노트북 **4. 지시 튜닝** 의 첫 셀을 실행한다. 터미널에서는 다음과 같다.
-
+`데이터 만들기`
 ```bash
 cd ~/llm-ft && source .venv/bin/activate
 python 06_build_sft.py
 ```
 
-```
-용어집 122개 (평가용으로 18개 제외)
-구성: glossary 312, section 1500, section(valid) 108, general 1200, general(valid) 30
-train 3012 / valid 138 -> data/sft/
-평가 80개 -> data/eval/sft_eval.jsonl  {'glossary_heldout': 18, 'general_heldout': 50, 'practical': 8, 'practical_general': 4}
-```
-
-(위 숫자는 Mac 에서 같은 기본값으로 실측했다. general 은 kullm-v2 를 스트리밍하므로 첫 실행에 수십 초가 걸린다.)
-
-> `02_prepare_data.py` 도 `data/sft/` 를 만든다 (섹션 템플릿 질문만). `06_build_sft.py` 가 그 결과를 덮어쓴다.
-> Mac 의 `config_lora.yaml`, 간단 버전 `train_hf.py` 도 같은 형식이라 그대로 쓸 수 있다.
-
-✅ **확인:** 샘플을 하나씩 직접 읽어 보자. 학습 전에 데이터를 눈으로 보는 습관이 가장 싸고 효과적인 디버깅이다.
-
+`데이터 확인`
 ```python
 import json, random
 rows = [json.loads(l) for l in open("data/sft/train.jsonl", encoding="utf-8")]
@@ -115,25 +98,8 @@ python 06_build_sft.py --synth data/synth_qa.jsonl
 - 평가용 held-out 용어 문서에서 나온 질문은 `06_build_sft.py` 가 자동으로 뺀다.
 - 생성에 쓴 LLM 의 **이용 약관**을 확인한다. 상용 API 중에는 출력으로 다른 모델을 학습시키는 것을 금지하는 곳이 있다.
 
-## 6.6 학습 코드 읽기 (`train_sft_hf.py`)
 
-구조는 모듈 4 의 `train_cpt_hf.py` 와 거의 같다. 다른 부분만 보자.
-
-```python
-def to_prompt_completion(example):
-    msgs = example["messages"]
-    return {"prompt": msgs[:-1], "completion": msgs[-1:]}     # 마지막 assistant 만 completion
-
-config = SFTConfig(
-    completion_only_loss=True,      # prompt(system+user) 토큰은 loss 에서 제외
-    max_length=2048,                # 답변이 1,800자 이하라 2K 면 충분 (넘으면 뒷부분이 잘림)
-    num_train_epochs=3,
-    per_device_train_batch_size=4, gradient_accumulation_steps=4,    # 실효 배치 16
-    learning_rate=1e-5 if args.full else 1e-4,
-    warmup_steps=0.03,              # 1 미만이면 비율
-    ...
-)
-```
+### 학습 ###
 
 | | CPT (모듈 4) | SFT (이번 모듈) | 이유 |
 |---|---|---|---|
@@ -147,9 +113,6 @@ config = SFTConfig(
 full 모드 메모리는 모듈 4.3 과 같은 계산이다 (fp32 가중치 12 + 기울기 12 + 8bit Adam 6 = 30GB + 활성값).
 시퀀스가 짧아서 활성값은 CPT 보다 작다.
 
-## 6.7 실습: 학습 실행
-
-노트북 **4-1. SFT 학습** 셀을 실행한다 (CPT 학습이 끝나 `models/k8s-ko-cpt-hf/final` 이 있어야 한다).
 
 ```bash
 # 터미널에서 직접 실행할 때
@@ -157,16 +120,6 @@ nohup python train_sft_hf.py --full > logs/train_sft.log 2>&1 &
 tail -f logs/train_sft.log
 ```
 
-학습 데이터 3,012개 / 실효 배치 16 → 1 epoch 약 188 스텝, 3 epoch 약 565 스텝이다.
-**학습 시간은 아직 측정하지 않았다** (리허설 측정표, [강사용 가이드](00_facilitator.md#리허설-측정표)).
-
-loss 곡선 읽는 법:
-
-| 관찰 | 의미 |
-|---|---|
-| train loss 가 첫 epoch 안에 빠르게 내려감 | 정상. 형식(템플릿, 문체)은 금방 배운다 |
-| epoch 경계마다 train loss 가 계단처럼 뚝 떨어짐 | 같은 답변을 다시 보면서 외우기 시작한 것 |
-| valid loss 가 오르기 시작 | 과적합. 그 앞의 체크포인트를 쓰거나 `--epochs 2` |
 
 ## 6.8 비교 대상: Chat Vector (학습 없이 가중치 산수)
 
