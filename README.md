@@ -7,4 +7,4 @@
 
 * [C3. 1단계 - Continued Pre-Training: 쿠버네티스 배우기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/3-cpt-training.md)
 
-* [C4. 2단계 - Instruction Tunning: 대화 스킬 배우기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/4-instruction-tuning.md)
+* [C4. 2단계 - SFT: 대화 스킬 배우기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/4-sft.md)
