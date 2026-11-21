@@ -99,67 +99,13 @@ python 06_build_sft.py --synth data/synth_qa.jsonl
 - 생성에 쓴 LLM 의 **이용 약관**을 확인한다. 상용 API 중에는 출력으로 다른 모델을 학습시키는 것을 금지하는 곳이 있다.
 
 
-### 학습 ###
-
-| | CPT (모듈 4) | SFT (이번 모듈) | 이유 |
-|---|---|---|---|
-| 시작 모델 | `Qwen/Qwen2.5-3B` | `models/k8s-ko-cpt-hf/final` | CPT 지식 위에 형식을 얹는다 |
-| loss | 모든 토큰 | 답변 토큰만 | 6.2 (2) |
-| 학습률 (full) | 2e-5 | **1e-5** | 형식만 가르치고 CPT 지식은 덜 건드린다 |
-| epoch | 4 | 3 | 데이터가 작다. 많이 돌리면 답변을 통째로 외운다 |
-| 시퀀스 | 8,192 x 배치 1 | 2,048 x 배치 4 | 샘플이 짧다. padding 은 배치 안에서만 생긴다 |
-| 저장 | 모델 | 모델 + **EOS 에 `<|im_end|>`** | 6.2 (3) |
-
-full 모드 메모리는 모듈 4.3 과 같은 계산이다 (fp32 가중치 12 + 기울기 12 + 8bit Adam 6 = 30GB + 활성값).
-시퀀스가 짧아서 활성값은 CPT 보다 작다.
-
+### 5. 학습 ###
 
 ```bash
 # 터미널에서 직접 실행할 때
 nohup python train_sft_hf.py --full > logs/train_sft.log 2>&1 &
 tail -f logs/train_sft.log
 ```
-
-
-## 6.8 비교 대상: Chat Vector (학습 없이 가중치 산수)
-
-SFT 학습이 도는 동안 비교 대상을 만들어 둔다. *Chat Vector* (Huang 외, 2023) 아이디어:
-
-```
-CPT 로 생긴 변화량   Δ = W_cpt − W_base
-대화형 + 도메인       W  = W_instruct + Δ
-```
-
-```bash
-python chat_vector.py                      # → models/k8s-ko-3b-chat
-python chat_vector.py --ratio 0.5          # 대화가 어색해지면 변화량을 절반만 더함
-```
-
-핵심 코드 (`chat_vector.py`):
-
-```python
-base, cpt, inst = load(args.base).state_dict(), load(args.cpt).state_dict(), load(args.instruct)
-with torch.no_grad():
-    for name, param in inst.named_parameters():
-        if any(s in name for s in ("embed_tokens", "lm_head")):   # 임베딩은 instruct 것을 그대로
-            continue
-        delta = cpt[name].float() - base[name].float()
-        param.copy_((param.float() + args.ratio * delta).to(param.dtype))
-```
-
-- **같은 계열·같은 크기**여야 한다: `Qwen2.5-3B` / `Qwen2.5-3B-Instruct` / CPT 결과물.
-- 계산은 fp32 로 한다. bf16 끼리 빼면 작은 변화량이 사라진다 (모듈 4.2 와 같은 이유).
-- 검증: 0.5B 모델로 Δ=0 (cpt=base) 을 넣었을 때 결과가 instruct 모델과 **정확히 일치**하는 것을 확인했다.
-- 메모리: 3B 모델 3개를 CPU RAM 에 올린다 (약 18GB). g6e 의 128GB 로 충분하다. GPU 는 쓰지 않아서 SFT 학습과 동시에 돌려도 된다.
-
-| | SFT (A) | Chat Vector (B) |
-|---|---|---|
-| 비용 | GPU 학습 (수십 분) | CPU 몇 분 |
-| 대화 품질 | 우리 데이터 수준 | Qwen 팀의 instruct 학습 (SFT + RLHF) 수준 |
-| 답변 형식 제어 | 데이터로 원하는 대로 | 못 함 |
-| 위험 | 데이터가 나쁘면 그대로 배움 | Δ 와 instruct 변화량이 충돌하면 어색해짐 |
-
-실무에서는 둘을 합치기도 한다: **Chat Vector 모델 위에 소량의 SFT.** (과제 6-5)
 
 ## 6.9 평가: 세 모델 비교
 
@@ -197,88 +143,7 @@ python 07_eval_sft.py      # INSTRUCT / CHATVEC / SFT. 경로가 없는 모델�
 > **ppl 지표의 한계:** 정답이 용어집 원문 한 가지뿐이다. 맞는 내용을 다른 말로 설명하면 ppl 이 높게 나온다.
 > 그래서 SFT 처럼 **용어집 문체로 학습한 모델에 유리**하다. 숫자와 함께 생성 결과를 반드시 읽는다.
 
----
 
-## 과제
-
-### 과제 6-1. loss 가 어디에 걸리는지 눈으로 확인하기
-
-TRL 이 실제로 만드는 labels 를 디코딩해 본다. `-100` 인 부분은 loss 에서 빠진다.
-
-```python
-import json
-from transformers import AutoTokenizer
-from trl import SFTConfig, SFTTrainer
-from datasets import Dataset
-
-tok = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-3B")
-row = json.loads(open("data/sft/train.jsonl", encoding="utf-8").readline())["messages"]
-ds = Dataset.from_list([{"prompt": row[:-1], "completion": row[-1:]}])
-trainer = SFTTrainer(model="Qwen/Qwen2.5-0.5B", train_dataset=ds, processing_class=tok,
-                     args=SFTConfig(output_dir="/tmp/sft-mask", max_length=512, report_to="none"))
-batch = trainer.data_collator([trainer.train_dataset[0]])
-ids, labels = batch["input_ids"][0].tolist(), batch["labels"][0].tolist()
-print("[loss 없음]", tok.decode([i for i, l in zip(ids, labels) if l == -100]))
-print("[loss 있음]", tok.decode([l for l in labels if l != -100]))
-```
-
-1. `<|im_start|>assistant\n` 은 어느 쪽에 들어가나? 답변 끝의 `<|im_end|>` 는?
-2. 답변 끝의 `<|im_end|>` 가 loss 에서 빠졌다면 학습된 모델은 어떻게 행동할까?
-
-### 과제 6-2. 답변 읽고 채점하기
-
-`07_eval_sft.py` 출력에서 실무 질문 8개를 골라 모델마다 표시해 보자. 사실 확인은 과제 5-2 의 `find_in_docs` 를 쓴다.
-
-| 질문 | 질문에 맞게 답했나 | 공식 번역어를 쓰나 | 사실이 맞나 | 길이·형식이 적당한가 |
-|---|---|---|---|---|
-| 파드 | | | | |
-| 디플로이먼트 vs 스테이트풀셋 | | | | |
-| ... | | | | |
-
-### 과제 6-3. 종료 토큰 실험
-
-SFT 모델에서 `<|im_end|>` 를 멈춤 토큰에서 빼고 생성해 보자.
-
-```python
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-path = "models/k8s-ko-sft-hf/final"
-tok = AutoTokenizer.from_pretrained(path)
-model = AutoModelForCausalLM.from_pretrained(path, dtype=torch.bfloat16, device_map="cuda")
-msgs = [{"role": "user", "content": "파드가 뭐야?"}]
-ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt", return_dict=True).to("cuda")
-for eos in ([151645, 151643], [151643]):          # <|im_end|> 포함 / base 모델 기본값
-    out = model.generate(**ids, max_new_tokens=200, do_sample=False, eos_token_id=eos)
-    print(eos, repr(tok.decode(out[0, ids["input_ids"].shape[1]:])), "\n")
-```
-
-두 번째 결과에서 `<|im_end|>` 뒤에 무엇이 나오나? 서빙할 때 이 문제가 생기면 사용자에게는 어떻게 보일까?
-
-### 과제 6-4. 대조 실험: CPT 는 정말 도움이 됐나?
-
-같은 SFT 데이터로 **CPT 를 하지 않은** base 모델을 학습해 비교한다.
-
-```bash
-nohup python train_sft_hf.py --full --model Qwen/Qwen2.5-3B --output models/k8s-ko-base-sft-hf \
-  > logs/train_base_sft.log 2>&1 &
-# 끝나면
-python 07_eval_sft.py --models SFT=models/k8s-ko-sft-hf/final BASE_SFT=models/k8s-ko-base-sft-hf/final
-```
-
-`glossary_heldout` 에서 차이가 나야 CPT 의 효과다. 학습한 용어(SFT 데이터에 있는 용어)로 물어봤을 때는 차이가 작을 수 있다. 왜일까?
-
-### 과제 6-5 (선택). 데이터 구성 바꿔 보기
-
-하나씩 바꿔서 다시 학습하고 `07_eval_sft.py` 결과를 비교한다. 각 학습은 `--output` 을 다르게 준다.
-
-| 실험 | 명령 | 볼 지표 |
-|---|---|---|
-| replay 없음 | `python 06_build_sft.py --n-general 0` | general ppl, 일반 질문 답변 |
-| 섹션 원문 줄이기 | `python 06_build_sft.py --max-sections 300` | 답변 길이·형식 |
-| 합성 데이터 추가 | 6.5 | 실무 질문 답변 |
-| Chat Vector 위에 SFT | `python train_sft_hf.py --full --model models/k8s-ko-3b-chat --output models/k8s-ko-cv-sft-hf` | 전부 |
-
-(정답과 해설은 [강사용 가이드](00_facilitator.md#모듈-6) 에 있다.)
 
 ---
 ← [모듈 5](05_evaluation.md) · 다음: [모듈 7. 다음 단계와 정리 →](07_next_steps.md)
