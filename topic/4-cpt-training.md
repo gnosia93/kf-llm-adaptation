@@ -152,3 +152,24 @@ out = model.generate(**enc, max_new_tokens=120, do_sample=False,
 | `repetition_penalty=1.1` | 3B 모델의 greedy 생성은 같은 문장을 반복하기 쉬움 |
 | `max_new_tokens=120` | 비교하기에 충분한 길이 |
 
+
+* 5.4 나만의 프로브
+
+학습한 문서에 있는 내용과 **없는 내용**으로 프로브를 2개씩 만들어 보자.
+
+```python
+my_probes = [
+    "# 잡\n\n잡(Job)은",                          # 문서에 있는 주제
+    "# 컨피그맵\n\n컨피그맵(ConfigMap)은",
+    "쿠버네티스 1.40 버전에서 새로 추가된 기능은",   # 문서에 없는 미래 정보 → 환각이 나오는지?
+    "아이스 아메리카노를 맛있게 만드는 방법은",       # 도메인 밖 → 일반 능력이 유지되나?
+]
+for label, path in [("BASE", BASE), ("CPT", TUNED)]:
+    model = AutoModelForCausalLM.from_pretrained(path, torch_dtype=torch.bfloat16, device_map="cuda").eval()
+    for p in my_probes:
+        print(f"[{label}] {p}{complete(model, p)}\n")
+    del model; torch.cuda.empty_cache()
+```
+
+- 도메인 밖 프롬프트에서도 CPT 모델이 쿠버네티스 이야기로 빠지지는 않나?
+
