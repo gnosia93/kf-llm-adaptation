@@ -5,7 +5,7 @@
   python train_sft_hf.py           # LoRA r=64 (VRAM 24GB 급 GPU). 끝나면 병합해서 저장
   python train_sft_hf.py --model Qwen/Qwen2.5-3B --output models/k8s-ko-base-sft-hf   # 대조 실험: CPT 없이 SFT
 
-데이터: 06_build_sft.py 가 만든 data/sft/{train,valid}.jsonl  ({"messages": [system, user, assistant]})
+데이터: build_sft.py 가 만든 data/sft/{train,valid}.jsonl  ({"messages": [system, user, assistant]})
 
 CPT 와 다른 점
   - loss: 답변(assistant) 토큰에만 준다. 질문을 외우는 데 용량을 쓰지 않는다.
