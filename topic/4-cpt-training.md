@@ -97,6 +97,8 @@ watch -n 2 nvidia-smi
 
 ### 5. 평가 (evaluation) ###
 
+* https://github.com/gnosia93/llm-train-ft/blob/main/src/eval_cpt.py
+
 * 5.1 평가 설계
 ```
                  원본 Qwen2.5-3B (BASE)      CPT 모델
