@@ -99,7 +99,7 @@ python 06_build_sft.py --synth data/synth_qa.jsonl
 - 생성에 쓴 LLM 의 **이용 약관**을 확인한다. 상용 API 중에는 출력으로 다른 모델을 학습시키는 것을 금지하는 곳이 있다.
 
 
-### 6. 학습 ###
+### 6. 모델 학습 ###
 
 ```bash
 # 터미널에서 직접 실행할 때
@@ -107,43 +107,16 @@ nohup python train_sft_hf.py --full > logs/train_sft.log 2>&1 &
 tail -f logs/train_sft.log
 ```
 
-### 7. 평가 ###
 
-SFT 학습이 끝나면 노트북의 평가 셀을 실행한다.
+### 7. 모델 학습 평가하기 ###
 
-```bash
-python 07_eval_sft.py      # INSTRUCT / CHATVEC / SFT. 경로가 없는 모델은 건너뜀 → logs/sft_eval.json
-```
+SFT 학습이 끝나면 평가 스크립트(07_eval_sft.py)를 실행해 기존 모델(INSTRUCT, CHATVEC)과 우리가 학습시킨 모델(SFT)의 성능을 비교합니다. 평가는 크게 세 가지 숫자와 실제 생성된 답변을 직접 읽어보는 방식으로 진행한다.
+먼저 숫자로 확인하는 세 가지 핵심 지표는 다음과 같습니다.
+* 미학습 용어 시험 (ppl glossary_heldout): SFT 학습에서 일부러 빼두었던 18개 용어의 뜻을 얼마나 정확히 맞히는지 봅니다. 이 숫자는 낮을수록 좋으며, 기존 모델(INSTRUCT)보다 크게 낮아져야 지식을 잘 꺼내 쓴다는 뜻이다.
+* 일반 대화 시험 (ppl general_heldout): 학습에 쓰지 않은 일상 질문 50개에 대한 답변 능력으로, 기존 모델과 비슷한 수준을 유지해야 일상 대화 능력을 까먹지 않았다는 증거이다.
+* 말 끊기 비율 (stop rate): 모델이 답변을 끝낸 뒤 제때 말을 멈추는지(<|im_end|>) 측정한다. 이 비율이 높을수록 정상이다.
 
-| 지표 | 무엇을 재나 | 좋은 결과 |
-|---|---|---|
-| `ppl glossary_heldout` | SFT 에 없던 용어 18개의 **정답 정의**를 답변으로 낼 확률 (답변 토큰만, 모듈 5 의 perplexity 와 같은 방식) | INSTRUCT 보다 크게 낮음 |
-| `ppl general_heldout` | 학습에 안 쓴 일반 지시문 50개의 정답 답변 | INSTRUCT 와 비슷 (망각 없음) |
-| `stop rate` | 생성이 `max_new_tokens` 전에 `<|im_end|>` 로 끝난 비율 | 100% 에 가까움 |
-| 생성 결과 | 실무 질문 8개, 일반 질문 4개, held-out 용어 6개를 나란히 출력 | 직접 읽고 판단 (과제 6-2) |
-
-결과를 기록해 두자.
-
-| 지표 | INSTRUCT | CHATVEC | SFT |
-|---|---|---|---|
-| ppl glossary_heldout | | | |
-| ppl general_heldout | | | |
-| stop rate | | | |
-
-해석 가이드:
-
-| 관찰 | 의미 | 다음 행동 |
-|---|---|---|
-| glossary ppl: SFT ≪ INSTRUCT, general ppl ≈ | ✅ 이상적. 지식은 꺼내 쓰고 대화 능력은 유지 | 모듈 7 (RAG, 서빙) |
-| glossary ppl 은 낮은데 답변이 문서를 길게 복사함 | section 원문 답변의 형식을 따라 함 | `--max-sections` ↓, 합성 데이터(6.5) |
-| general ppl 이 크게 ↑, 일반 질문에도 문서체 | 도메인 데이터에 치우침 (SFT 의 망각) | `--n-general` ↑, 학습률 ↓ |
-| stop rate 가 낮고 `user` 턴을 지어냄 | EOS 설정 문제 | 6.2 (3), 부록 A |
-| CHATVEC 이 SFT 보다 대화가 자연스러움 | 우리 SFT 데이터가 Qwen instruct 데이터보다 단조로움 | 정상. 합성 데이터나 Chat Vector + SFT 조합 |
-
-> **ppl 지표의 한계:** 정답이 용어집 원문 한 가지뿐이다. 맞는 내용을 다른 말로 설명하면 ppl 이 높게 나온다.
-> 그래서 SFT 처럼 **용어집 문체로 학습한 모델에 유리**하다. 숫자와 함께 생성 결과를 반드시 읽는다.
-
-
+숫자 확인 후에는 실제 생성된 답변(실무 질문 8개, 일반 질문 4개, 미학습 용어 6개)을 사람이 직접 눈으로 읽어보며 최종 판단을 내립니다.
 
 ---
 ← [모듈 5](05_evaluation.md) · 다음: [모듈 7. 다음 단계와 정리 →](07_next_steps.md)
