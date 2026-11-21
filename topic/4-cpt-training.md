@@ -171,5 +171,4 @@ for label, path in [("BASE", BASE), ("CPT", TUNED)]:
     del model; torch.cuda.empty_cache()
 ```
 
-- 도메인 밖 프롬프트에서도 CPT 모델이 쿠버네티스 이야기로 빠지지는 않나?
 
