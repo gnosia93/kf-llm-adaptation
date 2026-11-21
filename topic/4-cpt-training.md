@@ -99,7 +99,7 @@ watch -n 2 nvidia-smi
 
 * https://github.com/gnosia93/llm-train-ft/blob/main/src/eval_cpt.py
 
-#### 5.1 perplexity 계산 ####
+#### 5.1 perplexity 및 Probe 문장 생성 ####
 ```
                  원본 Qwen2.5-3B (BASE)      CPT 모델
                  ─────────────────────      ───────────────────
@@ -110,7 +110,7 @@ general_ko   ─▶  ppl_b(general)             ppl_c(general)     → 거의 �
 PROBES (6개)  ─▶  BASE 이어쓰기              CPT 이어쓰기        → 나란히 비교
 ```
 
-#### 5.2 문장 생성 프로브 ####
+#### 5.2 환각 검증 ####
 
 학습한 문서에 있는 내용과 **없는 내용**으로 프로브를 2개씩 만들어 보자.
 
