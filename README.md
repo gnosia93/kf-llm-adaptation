@@ -17,3 +17,5 @@
 * [LoRA (Low-Rank Adaptation) 핵심 원리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a1-lora.md)
 
 * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
+
+* [TOP 20](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
