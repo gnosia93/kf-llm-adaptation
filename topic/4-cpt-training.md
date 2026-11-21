@@ -93,6 +93,4 @@ watch -n 2 nvidia-smi
  14%|█▍        | 50/364 [05:12<32:40,  6.24s/it]
 ```
 
-
----
-← [모듈 3](03_data.md) · 다음: [모듈 5. 평가 →](05_evaluation.md)
+### 5. 평가 (evaluation) ###
