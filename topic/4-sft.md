@@ -37,10 +37,7 @@ Qwen2.5 는 아래 형식을 쓰고, base 토크나이저에도 같은 template 
 
 ### 3. Loss 계산 ###
 
-```
-토큰:  <|im_start|>system ... <|im_end|> <|im_start|>user 파드가 뭐야? <|im_end|> <|im_start|>assistant │ 가장 작고 ... <|im_end|>
-loss:  ─────────────────────────────── 0 (labels = -100) ───────────────────────────────────────────── │ ████ 학습 ████████
-```
+![](https://github.com/gnosia93/llm-train-ft/blob/main/images/sft-loss.jpg)
 
 질문까지 학습하면 모델이 **질문을 만들어 내는 법**까지 배우느라 용량을 쓴다. 그리고 질문이 길고 답이 짧은 데이터에서는 loss 의 대부분이 질문에서 나와 답변 학습이 약해진다.
 이를 방지하기 위해서 prompt 의 labels 를 `-100` 으로 설정한다.
