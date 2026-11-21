@@ -1,4 +1,4 @@
-## 연속 사전학습(Continued Pre-Training / CPT) ##
+## 연속 사전학습 (Continued Pre-Training) ##
 
 
 ### 1. 학습 설정 ###
