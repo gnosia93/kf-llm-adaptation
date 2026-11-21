@@ -59,6 +59,8 @@ L40S 기준 예상은 수십 분대다. 정확한 값은 강사가 리허설로 
 
 ### 4. 학습 실행 ###
 
+* https://github.com/gnosia93/llm-train-ft/blob/main/src/train_cpt_hf.py
+  
 ```python
 MODE = "--full"
 EPOCHS = 4
