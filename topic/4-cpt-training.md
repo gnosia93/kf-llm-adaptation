@@ -99,7 +99,7 @@ watch -n 2 nvidia-smi
 
 * https://github.com/gnosia93/llm-train-ft/blob/main/src/eval_cpt.py
 
-* 5.1 평가 설계
+#### 5.1 perplexity 계산 ####
 ```
                  원본 Qwen2.5-3B (BASE)      CPT 모델
                  ─────────────────────      ───────────────────
@@ -110,52 +110,7 @@ general_ko   ─▶  ppl_b(general)             ppl_c(general)     → 거의 �
 PROBES (6개)  ─▶  BASE 이어쓰기              CPT 이어쓰기        → 나란히 비교
 ```
 
-**base 모델은 질문에 답하지 않는다.** 그래서 프로브는 질문 형식이 아니라 **문서 앞부분**이다.
-
-```python
-PROBES = [
-    "# 파드\n\n파드(Pod)는 쿠버네티스에서",
-    "# 디플로이먼트\n\n디플로이먼트(Deployment)는",
-    "퍼시스턴트볼륨클레임(PVC)은 사용자의",
-    "kube-proxy는 클러스터의 각 노드에서 실행되는",
-    "파드의 로그를 확인하려면 다음 명령을 실행한다.\n\n```shell\n",
-    "스테이트풀셋(StatefulSet)이 디플로이먼트와 다른 점은",
-]
-```
-
-* 5.2 perplexity 계산 코드
-
-```python
-@torch.no_grad()
-def perplexity(model, path):
-    nll, n = 0.0, 0
-    for line in open(path, encoding="utf-8"):
-        ids = tok(json.loads(line)["text"], return_tensors="pt",
-                  truncation=True, max_length=MAX_TOKENS).input_ids.to(model.device)   # 학습 블록 상한과 같게
-        nll += model(ids, labels=ids).loss.item() * (ids.shape[1] - 1)   # 평균 loss → 합계로 되돌림
-        n += ids.shape[1] - 1
-    return math.exp(nll / n)                                              # 전체 토큰 평균 → exp
-```
-
-- `labels=ids` 를 주면 모델이 내부에서 한 칸씩 밀어서 다음 토큰 예측 loss 를 계산한다.
-- 문서마다 길이가 다르다. 그래서 **문서별 ppl 을 평균내지 않고**, 전체 토큰의 loss 합을 토큰 수로 나눈 뒤 `exp` 한다.
-
-
-* 5.3 생성 설정
-
-```python
-out = model.generate(**enc, max_new_tokens=120, do_sample=False,
-                     repetition_penalty=1.1, pad_token_id=tok.eos_token_id)
-```
-
-| 설정 | 이유 |
-|---|---|
-| `do_sample=False` (greedy) | 매번 같은 결과가 나와서 BASE 와 CPT 를 공정하게 비교할 수 있음 |
-| `repetition_penalty=1.1` | 3B 모델의 greedy 생성은 같은 문장을 반복하기 쉬움 |
-| `max_new_tokens=120` | 비교하기에 충분한 길이 |
-
-
-* 5.4 나만의 프로브
+#### 5.2 문장 생성 프로브 ####
 
 학습한 문서에 있는 내용과 **없는 내용**으로 프로브를 2개씩 만들어 보자.
 
@@ -163,8 +118,8 @@ out = model.generate(**enc, max_new_tokens=120, do_sample=False,
 my_probes = [
     "# 잡\n\n잡(Job)은",                          # 문서에 있는 주제
     "# 컨피그맵\n\n컨피그맵(ConfigMap)은",
-    "쿠버네티스 1.40 버전에서 새로 추가된 기능은",   # 문서에 없는 미래 정보 → 환각이 나오는지?
-    "아이스 아메리카노를 맛있게 만드는 방법은",       # 도메인 밖 → 일반 능력이 유지되나?
+    "쿠버네티스 1.40 버전에서 새로 추가된 기능은",        # 문서에 없는 미래 정보 → 환각이 나오는지?
+    "아이스 아메리카노를 맛있게 만드는 방법은",            # 도메인 밖 → 일반 능력이 유지되나?
 ]
 for label, path in [("BASE", BASE), ("CPT", TUNED)]:
     model = AutoModelForCausalLM.from_pretrained(path, torch_dtype=torch.bfloat16, device_map="cuda").eval()
