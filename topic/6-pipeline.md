@@ -218,3 +218,10 @@ def eval_dpo_judge_gate(
     dpo_wins, ties = 0, 0
     for q, sft_ans, dpo_ans in zip(questions, sft_answers, dpo_answers):
         swap = random.choice([True, False])
+```
+
+• 전체 조립 코드 (pipeline.py) 및 dsl.ExitHandler + dsl.If 연결 예시
+
+• 학습 컴포넌트 (train_llm.py) 또는 배포 컴포넌트 (deploy.py) 구현
+
+• 방금 짚어드린 eval_gates.py의 버그 수정 및 잘린 뒷부분 완성
