@@ -16,5 +16,5 @@
 
 * [LoRA (Low-Rank Adaptation) 핵심 원리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a1-lora.md)
 
-* [딥러닝 GPU 학습(싱글/멀티 노드) Top 20 장애 및 트러블슈팅 가이드](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
+* [딥러닝 트러블슈팅 가이드](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
    * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
