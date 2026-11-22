@@ -37,3 +37,4 @@ This workshop does not treat model training and MLOps as separate disciplines. I
 * [Model FLOPs Utilization](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a5-mfu-calc.md)
 * [kfp 구성요소](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a6-kf-pipeline.md)
 * [A100 vs H100](https://github.com/gnosia93/kf-llm-pipeline/blob/main/topic/a7-a100_vs_h100.md) / [EC2 사양 비교](https://github.com/gnosia93/vlm-distillation/blob/main/ec2-price.md)
+* [Regex](https://github.com/gnosia93/kf-llm-adaptation/blob/main/topic/8-regex.md)
