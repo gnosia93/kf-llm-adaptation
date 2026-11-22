@@ -9,6 +9,7 @@
 
 * [C4. 2단계 - Supervised Fine-Tuning (대화 스킬 배우기)](https://github.com/gnosia93/llm-train-ft/blob/main/topic/4-sft.md)
 
+* [C5. 3단계 - DPO (선호도 정렬)](https://github.com/gnosia93/llm-train-ft/blob/main/topic/5-dpo.md)
 
 
 
