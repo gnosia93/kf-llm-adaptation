@@ -25,7 +25,6 @@ _This workshop is under construction, Not fully implemented yet ..._
 * [LoRA (Low-Rank Adaptation) 핵심 원리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a1-lora.md)
 * [LR Schedule & Weight Decay](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a2-lr-schedule.md)
 * [딥러닝 트러블슈팅 가이드](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
-   * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
 * [Reward Model(보상/채점 모델) 만들기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a4-reward-model.md) 
 * [Model FLOPs Utilization](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a5-mfu-calc.md)
 * [kfp 구성요소](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a6-kf-pipeline.md)
