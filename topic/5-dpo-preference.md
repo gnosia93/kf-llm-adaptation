@@ -68,7 +68,7 @@ python build_pref.py                     # generate → judge → pairs
 # 끝나면 터미널 1 의 vLLM 을 Ctrl+C 로 끈다 (학습에 GPU 필요)
 ```
 
-chosen / rejected 쌍을 몇 개 직접 읽어 보자. **심판의 판단에 동의하는가?**
+chosen / rejected 쌍을 확인한다 (점수도 확인)
 
 ```python
 import json, random
@@ -79,7 +79,7 @@ for p in random.sample(pairs, 3):
     print(f"\n[rejected {p['score_rejected']}]\n{p['rejected'][0]['content'][:500]}\n" + "=" * 60)
 ```
 
-심판 기준을 바꾸고 싶으면 `JUDGE_PROMPT` 를 고친 뒤 `python build_pref.py --stage judge` 로 **채점만 다시** 한다 (후보 생성은 재사용).
+심판 기준을 바꾸고 싶으면 `JUDGE_PROMPT` 를 고친 뒤 `python build_pref.py --stage judge` 로 **채점만 다시** 한다.
 
 ### 3. DPO (Direct Preference Optimization) ###
 
