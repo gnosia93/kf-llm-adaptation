@@ -29,7 +29,7 @@ B 가 InstructGPT·초기 ChatGPT 의 방식이고, A 는 B 와 같은 목표를
 ![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/dpo-data-generation.jpg)
 
 
-
+![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/dpo-data-generation-flow.jpg)
 
 
 ### 설계시 고려사항 ####
