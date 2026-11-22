@@ -1,0 +1,9 @@
+torch
+transformers>=5.0     # warmup_steps 비율 지정, dtype 인자 (4.x 에서는 학습 스크립트가 다르게 동작)
+trl>=1.0
+peft>=0.17
+datasets
+accelerate
+bitsandbytes
+tensorboard
+liger-kernel

@@ -1,0 +1,7 @@
+# KFP 파이프라인 이미지·컴파일용 (학습 패키지는 requirements-cuda.txt)
+kfp>=2.18,<3
+kfp-kubernetes>=2.18,<3
+mlflow>=3.0,<4
+kubernetes>=30
+boto3                  # MLflow artifact store (S3 / MinIO)
+pyyaml
