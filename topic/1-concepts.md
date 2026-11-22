@@ -118,7 +118,7 @@ L40S 48GB 에는 3B full 학습이 들어가므로 이번 실습 기본값은 **
 3. 더 나아가려면 큰 LLM 으로 문서를 다른 문체로 다시 쓰는 **데이터 증강**을 한다.
 
 ### 8. Perplexity: 학습이 잘 됐는지 재는 법 ###
-
+![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/perplexity.jpg)
 ```
 perplexity = exp(평균 loss)
 ```
