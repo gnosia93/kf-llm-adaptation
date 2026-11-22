@@ -53,7 +53,7 @@ def my_pipeline(raw_data: Input[Dataset]):
 ```
 
 
-> [!info]
+> [!INFO]
 >  KFP `task` (`PipelineTask`) 객체란?
 > 
 > `@dsl.pipeline` 내부에서 컴포넌트(`@dsl.component`)를 호출할 때 반환되는 **파이프라인 단계(Step) 객체**입니다. 함수가 즉시 실행되는 것이 아니라, 쿠버네티스 파드(Pod)로 실행하기 위한 명세서 역할을 합니다.
