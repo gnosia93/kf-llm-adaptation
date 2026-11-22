@@ -2,29 +2,14 @@
 
 **데이터 전처리 → CPT(연속 사전학습) → SFT(지도 미세조정) → DPO(선호도 정렬) → vLLM 무중단 추론 배포** 로 이어지는 3B 모델 파이프라인을 **Kubeflow Pipelines (KFP v2)**로 자동화하고, 각 단계 사이에 **자동화된 품질 관문(Quality Gate)**, **MLflow 계층형 트래킹 및 Model Registry Alias 배포**, 그리고 **실패 시 Slack 알림(`dsl.ExitHandler`)** 발송을 하는 방법에 대해서 다룬다.
 
-### 1. 전체 파이프라인 및 Quality Gate 아키텍처 ###
+### 1. 전체 파이프라인 아키텍처 ###
 
 핵심 설계 원칙은 **학습(Train) 컴포넌트와 평가(Eval/Gate) 컴포넌트를 물리적으로 분리** 하는 것이다. 이를 통해 KFP의 **Step Caching** 기능을 극대화하여, Gate 임계값이나 평가 기준을 수정할 때 무거운 GPU 학습을 다시 돌리지 않고 평가 단계만 1분 내에 재실행할 수 있다.
 
-```text
-[dsl.ExitHandler: 파이프라인 종료 시 성공/실패 및 실패 Gate 자동 Slack 알림]
- │
-[Parent MLflow Run: qwen25-3b-pipeline-v1]
- │
- ├─▶ [1. Data Pre-processing] ──▶ [Gate 1: 중복률/토큰분포/PII] ──(FAIL)──▶ [즉시 중단 & Slack 알림]
- │                                        │ (PASS: dsl.If)
- ├─▶ [2. Train CPT (3B)] ───────▶ [Eval & Gate 2: Held-out PPL] ──(FAIL)──▶ [즉시 중단 & Slack 알림]
- │                                        │ (PASS: dsl.If)
- ├─▶ [3. Train SFT (LoRA)] ─────▶ [Eval & Gate 3: Stop Rate/포맷] ─(FAIL)──▶ [즉시 중단 & Slack 알림]
- │                                        │ (PASS: dsl.If)
- ├─▶ [4. Train DPO & Merge] ────▶ [Eval & Gate 4: Judge 승률] ────(FAIL)──▶ [즉시 중단 & Slack 알림]
- │                                        │ (PASS: dsl.If)
- └─▶ [5. MLflow Registry '@challenger' 등록] ──▶ [6. vLLM InitContainer 무중단 롤링 배포('@champion')]
-```
+![](https://github.com/gnosia93/llm-pipeline/blob/main/images/kf-pipeline.jpg)
 
----
 
-## 2. 스테이지별 Quality Gate 검증 기준표 (3B 모델 권장)
+### 2. Quality Gate 검증 기준표 ###
 
 | 관문 (Gate) | 평가 대상 | 핵심 측정 지표 (MLflow 기록) | 통과 조건 (Threshold) | 방어하는 실패 유형 |
 | :--- | :--- | :--- | :--- | :--- |
@@ -33,9 +18,8 @@
 | **Gate 3 (SFT)** | SFT 완료 모델 | • 종료 토큰 비율 (`stop_rate`)<br>• 평균 응답 길이 (`avg_len`) | • `stop_rate >= 0.95`<br>• `20 <= avg_len <= 480` | `<\|im_end\|>` 미생성으로 인한 무한 반복 생성 폭주 방지 |
 | **Gate 4 (DPO)** | 병합된 최종 모델 | • SFT 대비 Judge 승률 (`win_rate`)<br>• SFT 대비 응답 길이 증가율 | • `win_rate >= 0.55`<br>• 길이 증가폭 **< 20%** | 정렬 실패 또는 '길게 쓰기만 하는 편향(Verbosity Bias)' 차단 |
 
----
 
-## 3. 실전 파이썬 구현 코드 (KFP v2 + 전체 Gate 평가 로직 + MLflow)
+### 3. 실전 파이썬 구현 코드 (KFP v2 + 전체 Gate 평가 로직 + MLflow) ###
 
 ### ① Gate 2, Gate 3, Gate 4 평가 컴포넌트 (`components/eval_gates.py`)
 
