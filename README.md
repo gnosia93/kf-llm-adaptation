@@ -17,7 +17,7 @@ This workshop does not treat model training and MLOps as separate disciplines. I
 
 * [C1. 개념](https://github.com/gnosia93/kf-llm-pipeline/blob/main/topic/1-concepts.md)
 
-* [C2. 데이터 전처리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/2-data-preprocessing.md)
+* [C2. 데이터 전처리](https://github.com/gnosia93/kf-llm-adaptation/blob/main/topic/2-pre-processing.md)
 
 * [C3. 1단계 - Continued Pre-Training (쿠버네티스 배우기)](https://github.com/gnosia93/llm-train-ft/blob/main/topic/3-cpt.md)
 
