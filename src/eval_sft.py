@@ -50,6 +50,7 @@ def messages(row, answer=None):
     return msgs
 
 
+# add_generation_prompt=True (추론 / 대답 생성할 때) - 맨 뒤에 <|im_start|>assistant가 자동으로 붙는다.
 def encode(tok, msgs, add_generation_prompt):
     text = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=add_generation_prompt)
     return tok(text, add_special_tokens=False, return_tensors="pt").input_ids
