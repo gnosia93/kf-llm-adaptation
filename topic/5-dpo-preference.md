@@ -24,6 +24,8 @@ B 가 InstructGPT·초기 ChatGPT 의 방식이고, A 는 B 와 같은 목표를
 
 ### 2. 선호 데이터 만들기 ###
 
+* https://github.com/gnosia93/kf-llm-pipeline/blob/main/src/dpo/build_pref.py
+
 #### (1) 파이프라인 ####
 
 ![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/dpo-data-generation.jpg)
