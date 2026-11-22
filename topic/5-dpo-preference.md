@@ -76,12 +76,10 @@ for p in random.sample(pairs, 3):
 
 심판 기준을 바꾸고 싶으면 `JUDGE_PROMPT` 를 고친 뒤 `python build_pref.py --stage judge` 로 **채점만 다시** 한다 (후보 생성은 재사용).
 
-## 7.3 경로 A — DPO (Direct Preference Optimization)
-
-### (1) 아이디어
+### 3. DPO (Direct Preference Optimization) ###
 
 RLHF 의 목표는 "보상은 높이되, 참조 모델(SFT)에서 너무 멀어지지 않기" 다. 이 목표의 최적해를 풀어 보면
-**정책 자체가 보상 모델 역할을 한다**는 결론이 나온다. 그래서 보상 모델과 강화학습 없이 선호 쌍으로 바로 학습할 수 있다.
+**정책 자체가 보상 모델 역할을 한다** 는 결론이 나온다. 그래서 보상 모델과 강화학습 없이 선호 쌍으로 바로 학습할 수 있다.
 
 ```
 암묵적 보상   r(y) = β · [ log π(y|x) − log π_ref(y|x) ]      π_ref = 학습 시작 시점의 SFT 모델 (고정)
@@ -92,33 +90,16 @@ DPO loss      −log σ( r(chosen) − r(rejected) )
 - **β** 는 참조 모델에 묶어 두는 강도다. 크면(0.3~0.5) 보수적, 작으면(0.01~0.05) 선호를 강하게 따르지만 망가지기 쉽다. 기본 0.1.
 - 참조 모델이 필요하지만, LoRA 를 쓰면 **어댑터를 끈 같은 모델**이 참조 모델이다. 메모리가 추가로 들지 않는다.
 
-### (2) 코드 (`train_dpo_hf.py`)
-
-```python
-config = DPOConfig(beta=args.beta, max_length=1536, learning_rate=5e-6, num_train_epochs=2, ...)
-trainer = DPOTrainer(model=model, ref_model=None,             # peft 를 쓰면 어댑터 끈 모델이 참조
-                     train_dataset=ds["train"], eval_dataset=ds["validation"],
-                     processing_class=tokenizer,
-                     peft_config=LoraConfig(r=32, lora_alpha=64, target_modules="all-linear", task_type="CAUSAL_LM"))
-```
-
-학습률이 SFT(LoRA 1e-4) 보다 **20배 작다.** 선호 학습은 신호가 강해서 조금만 커도 모델이 망가진다.
-
 ```bash
 nohup python train_dpo_hf.py > logs/train_dpo.log 2>&1 &
 ```
 
-### (3) 로그 읽는 법
+#### 로그 읽는 법 ####
+* `rewards/margins` | r(chosen) − r(rejected) 평균 | 0 에서 시작해 점점 커짐 |
+* `rewards/accuracies` | r(chosen) > r(rejected) 인 비율 | 0.5 에서 시작해 0.7~0.9 |
+* `rewards/chosen` | chosen 의 암묵적 보상 | 약간 음수까지는 흔함. 크게 음수면 chosen 확률까지 같이 떨어지는 중 |
+* `eval_loss` | valid 쌍의 DPO loss | 0.693(= log 2) 에서 내려감. 다시 오르면 과적합 |
 
-| 값 | 의미 | 정상 |
-|---|---|---|
-| `rewards/margins` | r(chosen) − r(rejected) 평균 | 0 에서 시작해 점점 커짐 |
-| `rewards/accuracies` | r(chosen) > r(rejected) 인 비율 | 0.5 에서 시작해 0.7~0.9 |
-| `rewards/chosen` | chosen 의 암묵적 보상 | 약간 음수까지는 흔함. 크게 음수면 chosen 확률까지 같이 떨어지는 중 |
-| `eval_loss` | valid 쌍의 DPO loss | 0.693(= log 2) 에서 내려감. 다시 오르면 과적합 |
-
-> **흔한 현상:** DPO 는 margin 을 키우기 위해 chosen 과 rejected 의 확률을 **둘 다** 낮추기도 한다.
-> `rewards/chosen` 이 계속 크게 떨어지면 학습률을 낮추거나 β 를 올리거나 epoch 를 줄인다.
 
 ## 7.4 경로 B — RLHF: 보상 모델 + PPO
 
@@ -263,42 +244,3 @@ python 07_eval_sft.py --models SFT=models/k8s-ko-sft-hf/final DPO=models/k8s-ko-
 
 ---
 
-## 과제
-
-### 과제 7-1. 심판과 나의 판단 비교
-
-7.2 (3) 의 코드로 쌍 10개를 읽고 심판에 동의하는지 표시한다. 동의하지 않은 쌍은 어떤 이유였나? (길이, 사실, 말투 ...)
-`JUDGE_PROMPT` 를 고쳐서 `--stage judge` 로 다시 채점하고 결과를 비교해 보자.
-
-### 과제 7-2. β 바꿔 보기 (DPO)
-
-```bash
-python train_dpo_hf.py --beta 0.02 --output models/k8s-ko-dpo-b002
-python train_dpo_hf.py --beta 0.5  --output models/k8s-ko-dpo-b05
-python 07_eval_sft.py --models SFT=models/k8s-ko-sft-hf/final B002=models/k8s-ko-dpo-b002/final \
-  B01=models/k8s-ko-dpo-hf/final B05=models/k8s-ko-dpo-b05/final --reward-model models/k8s-ko-rm-hf/final
-```
-
-β 가 작을수록 `answer len`, `ppl glossary_heldout` 은 어떻게 바뀌나?
-
-### 과제 7-3. PPO 의 KL 벌점 끄기
-
-```bash
-python train_ppo.py --kl-coef 0 --steps 40 --output models/k8s-ko-ppo-nokl
-```
-
-로그의 `kl`, `len`, 출력되는 답변이 기본값(0.05)과 어떻게 다른가? 보상 해킹의 징후를 찾아보자.
-
-### 과제 7-4. 보상 모델 정확도와 PPO
-
-`train_rm_hf.py` 의 `eval_accuracy` 를 기록하고, 7.5 에서 RM score 가 오른 만큼 실제 답변이 좋아졌는지 생성 결과로 판단해 보자.
-RM 이 틀리게 채점한 답(점수는 높은데 실제로는 나쁜 답)을 하나 찾아보자.
-
-### 과제 7-5 (토론). 우리 서비스에는?
-
-DPO 와 PPO 중 무엇을 고르겠나? 선호 데이터는 어디서 얻을 수 있나? (사용자 👍/👎, 상담원 수정 이력, 심판 LLM ...)
-
-(정답과 해설은 [강사용 가이드](00_facilitator.md#모듈-7) 에 있다.)
-
----
-← [모듈 6](06_instruction_tuning.md) · 다음: [모듈 8. 다음 단계와 정리 →](08_next_steps.md)
