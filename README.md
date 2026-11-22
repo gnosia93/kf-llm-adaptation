@@ -24,3 +24,4 @@ _This workshop is under construction, Not fully implemented yet ..._
    * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
 * [Reward Model(보상/채점 모델) 만들기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a4-reward-model.md) 
 * [Model FLOPs Utilization](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a5-mfu-calc.md)
+* [kfp 객체](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a6-kf-pipeline.md)
