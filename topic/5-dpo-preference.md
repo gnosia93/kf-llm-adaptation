@@ -1,4 +1,4 @@
-## 선호 학습: DPO 와 PPO (RLHF) ##
+## 선호 학습: DPO ##
 
 ### 1. SFT 다음에 남은 문제 ###
 
@@ -99,49 +99,4 @@ nohup python train_dpo_hf.py > logs/train_dpo.log 2>&1 &
 * `rewards/accuracies` | r(chosen) > r(rejected) 인 비율 | 0.5 에서 시작해 0.7~0.9 |
 * `rewards/chosen` | chosen 의 암묵적 보상 | 약간 음수까지는 흔함. 크게 음수면 chosen 확률까지 같이 떨어지는 중 |
 * `eval_loss` | valid 쌍의 DPO loss | 0.693(= log 2) 에서 내려감. 다시 오르면 과적합 |
-
-
-### 4. RLHF: 보상 모델 + PPO ###
-
-#### 보상 모델 (`train_rm_hf.py`) ####
-
-(질문, 답변) → **점수 하나**를 내는 모델이다. SFT 모델 위에 `Linear(2048 → 1)` 점수 헤드를 얹고 같은 선호 쌍으로 학습한다.
-
-```bash
-nohup python train_rm_hf.py > logs/train_rm.log 2>&1 &
-```
-확인할 값은 **`eval_accuracy`** (valid 쌍에서 chosen 점수가 더 높은 비율) 다. 0.5 면 동전 던지기고, 0.7 이상이면 PPO 에 쓸 만하다.
-
-#### PPO 의 구성 ####
-
-| 역할 | 모델 | 학습 | 메모리 |
-|---|---|---|---|
-| 정책 π | SFT 모델 + LoRA | ✓ | bf16 6GB |
-| 참조 π_ref | 같은 모델, **LoRA 끈 상태** | ✗ | 0 (공유) |
-| 가치 V | 정책의 마지막 hidden state 위 `Linear(2048→1)` | ✓ | 무시할 수준 |
-| 보상 RM | `train_rm_hf.py` 결과 | ✗ | bf16 6GB |
-
-원래 PPO 는 모델 4개(정책, 참조, 가치, 보상)를 따로 올린다. 3B 를 L40S 1장에 올리기 위해 정책·참조·가치가 가중치를 공유한다.
-
-#### 한 스텝의 흐름 ####
-
-```
-① rollout    질문 32개 → 정책이 답변 샘플링 (temperature 1)
-② 점수        RM(질문, 답변) → 답변마다 점수 하나. 끝나지 않은 답은 −1
-③ 토큰 보상    r_t = −β·(log π − log π_ref)  (모든 토큰)     마지막 토큰에만 + RM 점수
-④ GAE        "이 토큰을 낸 것이 평균보다 얼마나 좋았나" = advantage A_t
-⑤ 업데이트    같은 rollout 으로 2 epoch:
-              ratio = π_new / π_old
-              정책 loss = −min(ratio·A, clip(ratio, 0.8, 1.2)·A)      ← 한 번에 너무 많이 바뀌지 않게
-              가치 loss = ½(V − return)²
-```
-
-```bash
-nohup python train_ppo.py > logs/train_ppo.log 2>&1 &      # 100 스텝 x 질문 32개
-tail -f logs/train_ppo.log
-```
-
-
-
----
 
