@@ -24,7 +24,7 @@
 | 파일 | 내용 |
 |---|---|
 | [`pipelines/pipeline.py`](https://github.com/gnosia93/llm-pipeline/blob/main/src/pipeline/pipeline.py) | 파이프라인 정의 (`dsl.ExitHandler`, `dsl.If/Else`, GPU·secret 설정), 컴파일·제출 CLI |
-| `pipelines/components.py` | KFP 컴포넌트 (얇은 껍데기). 학습은 저장소의 `train_*.py` 를 그대로 호출 |
+| [`pipelines/components.py`](https://github.com/gnosia93/llm-pipeline/blob/main/src/pipeline/components.py) | KFP 컴포넌트 (얇은 껍데기). 학습은 저장소의 `train_*.py` 를 그대로 호출 |
 | `pipelines/lib.py` | 관문 지표·판정, MLflow, Registry, 배포·롤백, Slack 로직 (KFP 없이 import 가능) |
 | `pipelines/selftest.py` | 클러스터 없이 돌리는 검사 |
 | `pipelines/Dockerfile`, `requirements-pipeline.txt` | 파이프라인 이미지 |
