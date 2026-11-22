@@ -81,13 +81,7 @@ CPT 의 데이터는 "대화"가 아니라 "문서"다. instruct 모델에 문�
 
 ### 5. full fine-tuning vs LoRA ###
 
-```
-full fine-tuning                    LoRA
-┌──────────────┐                    ┌──────────────┐   ┌──┐
-│  W (전부 학습) │                    │ W (고정)      │ + │BA│ ← 작은 행렬 두 개만 학습
-│  30.9억 개    │                    │              │   └──┘   (rank r)
-└──────────────┘                    └──────────────┘
-```
+![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/full-vs-lora.jpg)
 
 | | full | LoRA (r=128, 모든 Linear) |
 |---|---|---|
