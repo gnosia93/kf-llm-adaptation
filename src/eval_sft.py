@@ -14,7 +14,7 @@
   RM score    (--reward-model 을 주면) 생성 답변의 보상 모델 점수 평균. PPO 가 높인 값이지만, 이것만 오르고
               다른 지표가 나빠지면 보상 모델의 약점을 파고든 것
 
-  python 07_eval_sft.py --models SFT=models/k8s-ko-sft-hf/final DPO=models/k8s-ko-dpo-hf/final \
+  python eval_sft.py --models SFT=models/k8s-ko-sft-hf/final DPO=models/k8s-ko-dpo-hf/final \
                         PPO=models/k8s-ko-ppo-hf/final --reward-model models/k8s-ko-rm-hf/final
 
 결과: logs/sft_eval.json (모든 생성 결과 포함)
