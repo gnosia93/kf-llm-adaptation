@@ -1,30 +1,18 @@
-# 모듈 7. 선호 학습: DPO 와 PPO (RLHF)
+## 선호 학습: DPO 와 PPO (RLHF) ##
 
-**소요 80분** · 강의 30분 + 실습 50분 (학습은 백그라운드)
-
-## 학습 목표
-
-- SFT 만으로는 고치기 어려운 문제와, **선호(preference) 학습**이 무엇을 더 가르치는지 설명할 수 있다.
-- on-policy 선호 데이터를 만든다: SFT 모델이 쓴 답 여러 개 → 심판 LLM 채점 → 좋은 답 / 나쁜 답 쌍.
-- **DPO** 의 loss 와 β 의 역할을 이해하고, 학습 로그(margin, accuracy)를 읽는다.
-- **PPO (RLHF)** 의 구성 요소(정책, 참조, 가치, 보상 모델)와 한 스텝의 흐름을 코드로 따라간다.
-- 보상 해킹(reward hacking)을 지표로 알아챈다.
-
----
-
-## 7.1 SFT 다음에 남은 문제
+### 1. SFT 다음에 남은 문제 ###
 
 SFT 는 **정답을 따라 쓰는 것**만 배운다. "이 답이 저 답보다 낫다" 는 신호는 없다.
-모듈 6 의 SFT 모델에서 흔히 보이는 문제:
+SFT 모델에서 흔히 보이는 문제:
 
 | 증상 | 예 | SFT 로 잘 안 고쳐지는 이유 |
 |---|---|---|
 | 그럴듯한 환각 | 없는 `kubectl` 플래그, 틀린 기본값 | 정답 데이터에는 "틀린 답" 이 없다. 무엇을 하면 안 되는지 모른다 |
-| 문서 덤프 | 질문과 상관없는 섹션을 길게 옮겨 적음 | section 원문 답변을 따라 하도록 배웠다 (모듈 6.3) |
+| 문서 덤프 | 질문과 상관없는 섹션을 길게 옮겨 적음 | section 원문 답변을 따라 하도록 배웠다 |
 | 반복·끊김 | 같은 문장 반복, 중간에 끊김 | 정답 하나만 보면 이런 실패를 피하는 법을 배우지 못한다 |
 
-**선호 학습**은 같은 질문에 대한 답 두 개를 보여주고 "이쪽이 낫다" 를 가르친다.
-모델이 **실제로 저지르는 실수**를 rejected 로 보여주면, 그 실수의 확률을 직접 낮춘다.
+**선호 학습** 은 같은 질문에 대한 답 두 개를 보여주고 "이쪽이 낫다" 를 가르친다.
+모델이 **실제로 저지르는 실수** 를 rejected 로 보여주면, 그 실수의 확률을 직접 낮춘다.
 
 ```
             ┌────────── A. DPO: 선호 쌍으로 바로 정책 학습 (분류 문제처럼) ──────────┐
@@ -34,9 +22,9 @@ SFT 모델 ───┤                                                         
 
 B 가 InstructGPT·초기 ChatGPT 의 방식이고, A 는 B 와 같은 목표를 강화학습 없이 푸는 방법이다 (Rafailov 외, 2023).
 
-## 7.2 선호 데이터 만들기
+### 2. 선호 데이터 만들기 ###
 
-### (1) 파이프라인
+#### (1) 파이프라인 ####
 
 ```
 data/sft/train.jsonl 의 질문 1,000개 (k8s 80% + 일반 20%)
@@ -51,25 +39,18 @@ data/pref/{train,valid}.jsonl   {"prompt": [...], "chosen": [...], "rejected": [
         └─▶ DPO (train_dpo_hf.py) 와 보상 모델 (train_rm_hf.py) 이 같은 파일을 쓴다
 ```
 
-### (2) 설계할 때 고려한 점
+### 설계시 고려사항 ####
 
 - **on-policy:** 다른 모델의 답이 아니라 **지금 학습할 SFT 모델의 답**으로 쌍을 만든다. 모델이 실제로 하는 실수를 고친다.
   남의 답(예: 큰 모델의 답 vs 작은 모델의 답)으로 만들면 "큰 모델 말투" 를 배우는 데 그칠 수 있다.
 - **기준 답변을 심판에게 준다:** 7B 심판도 쿠버네티스 세부 사실은 틀릴 수 있다. SFT 정답(공식 문서에서 온 것)을
-  `<기준 답변>` 으로 함께 줘서 사실 판단의 근거로 쓰게 한다 (`08_build_pref.py` 의 `JUDGE_PROMPT`).
+  `<기준 답변>` 으로 함께 줘서 사실 판단의 근거로 쓰게 한다 (`build_pref.py` 의 `JUDGE_PROMPT`).
 - **위치 편향:** LLM 심판은 앞에 나온 답에 점수를 더 주는 경향이 있다. 답의 순서를 섞어서 보여주고 점수를 원래 순서로 되돌린다.
 - **점수 차 기준(`--min-margin`):** 비슷한 점수의 쌍은 잡음이다. 차이가 뚜렷한 쌍만 쓴다.
 - **길이 편향 확인:** 심판은 긴 답을 선호하기 쉽다. 결과 출력의 `평균 길이 chosen / rejected` 를 꼭 본다.
   chosen 이 훨씬 길면 모델은 "길게 쓰면 좋다" 를 배운다.
 - **심판 없이 할 때(`--judge heuristic`):** 기준 답변과의 글자 겹침 + 종료·반복 감점으로 점수를 매긴다. 동작 확인용 대용품이다.
   겹침 점수는 "문서를 많이 베낄수록 좋다" 를 가르칠 수 있다.
-
-> **라이선스:** 심판 모델의 출력을 학습 신호로 쓴다. Qwen2.5-7B-Instruct 는 Apache-2.0 이다.
-> 상용 API 를 심판으로 쓸 때는 출력으로 모델을 학습시키는 것이 약관상 허용되는지 확인한다.
-
-### (3) 실습
-
-SFT 모델(`models/k8s-ko-sft-hf/final`) 이 있어야 한다. 노트북 **5. 선호 학습** 의 첫 셀, 또는 터미널에서:
 
 ```bash
 # 터미널 1: 심판 (vLLM, 모듈 8.4 의 별도 가상환경). SFT 모델과 GPU 를 나눠 쓰도록 메모리를 55% 로 제한
@@ -78,21 +59,11 @@ vllm serve Qwen/Qwen2.5-7B-Instruct --max-model-len 8192 --gpu-memory-utilizatio
 
 # 터미널 2
 cd ~/llm-ft && source .venv/bin/activate
-python 08_build_pref.py                     # generate → judge → pairs
+python build_pref.py                     # generate → judge → pairs
 # 끝나면 터미널 1 의 vLLM 을 Ctrl+C 로 끈다 (학습에 GPU 필요)
 ```
 
-출력 예시 (형식만. **3B 실측값은 아직 없다**):
-
-```
-[generate] 질문 1000개 x 답변 4개  (policy=models/k8s-ko-sft-hf/final)
-  -> data/pref/candidates.jsonl  (끝까지 생성된 답 ..%)
-[judge] api  (1000개)
-[pairs] ...쌍 (train ... / valid ...), 제외: {'점수 차 부족': ...}
-  평균 점수 chosen ... / rejected ..., 평균 길이 chosen ...자 / rejected ...자
-```
-
-✅ **확인:** chosen / rejected 쌍을 몇 개 직접 읽어 보자. **심판의 판단에 동의하는가?**
+chosen / rejected 쌍을 몇 개 직접 읽어 보자. **심판의 판단에 동의하는가?**
 
 ```python
 import json, random
@@ -103,7 +74,7 @@ for p in random.sample(pairs, 3):
     print(f"\n[rejected {p['score_rejected']}]\n{p['rejected'][0]['content'][:500]}\n" + "=" * 60)
 ```
 
-심판 기준을 바꾸고 싶으면 `JUDGE_PROMPT` 를 고친 뒤 `python 08_build_pref.py --stage judge` 로 **채점만 다시** 한다 (후보 생성은 재사용).
+심판 기준을 바꾸고 싶으면 `JUDGE_PROMPT` 를 고친 뒤 `python build_pref.py --stage judge` 로 **채점만 다시** 한다 (후보 생성은 재사용).
 
 ## 7.3 경로 A — DPO (Direct Preference Optimization)
 
