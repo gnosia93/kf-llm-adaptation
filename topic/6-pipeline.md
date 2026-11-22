@@ -19,209 +19,66 @@
 | **Gate 4 (DPO)** | 병합된 최종 모델 | • SFT 대비 Judge 승률 (`win_rate`)<br>• SFT 대비 응답 길이 증가율 | • `win_rate >= 0.55`<br>• 길이 증가폭 **< 20%** | 정렬 실패 또는 '길게 쓰기만 하는 편향(Verbosity Bias)' 차단 |
 
 
-### 3. 실전 파이썬 구현 코드 (KFP v2 + 전체 Gate 평가 로직 + MLflow) ###
+### 3. 파이프라인 ###
 
-### ① Gate 2, Gate 3, Gate 4 평가 컴포넌트 (`components/eval_gates.py`)
+| 파일 | 내용 |
+|---|---|
+| `pipelines/pipeline.py` | 파이프라인 정의 (`dsl.ExitHandler`, `dsl.If/Else`, GPU·secret 설정), 컴파일·제출 CLI |
+| `pipelines/components.py` | KFP 컴포넌트 (얇은 껍데기). 학습은 저장소의 `train_*.py` 를 그대로 호출 |
+| `pipelines/lib.py` | 관문 지표·판정, MLflow, Registry, 배포·롤백, Slack 로직 (KFP 없이 import 가능) |
+| `pipelines/selftest.py` | 클러스터 없이 돌리는 검사 |
+| `pipelines/Dockerfile`, `requirements-pipeline.txt` | 파이프라인 이미지 |
+| `pipelines/k8s/vllm-serving.yaml` | 서빙 Deployment (InitContainer, RollingUpdate maxUnavailable 0, probe, PDB) |
+| `pipelines/k8s/judge-vllm.yaml` | 심판 LLM (Qwen2.5-7B-Instruct) |
+| `pipelines/k8s/rbac.yaml`, `secret.example.yaml` | 배포 권한, 비밀값 예시 |
 
-```python
-from kfp import dsl
-from kfp.dsl import Input, Model, Dataset
+#### 1. 준비 (한 번) ####
 
-BASE_IMAGE = "my-registry/llm-pipeline-3b:v1"  # torch, transformers, peft, trl, mlflow, openai 포함
+```bash
+# 1) 이미지 (모든 단계 공용)
+docker build -f pipelines/Dockerfile -t <레지스트리>/llm-ft-pipeline:v1 .
+docker push <레지스트리>/llm-ft-pipeline:v1
 
-# ------------------------------------------------------------------------------
-# Gate 2: CPT Perplexity 검증 (도메인 PPL 하락 & 일반 상식 망각 방지)
-# ------------------------------------------------------------------------------
-@dsl.component(base_image=BASE_IMAGE)
-def eval_cpt_gate(
-    base_model_id: str,
-    cpt_model: Input[Model],
-    eval_dataset: Input[Dataset],
-    mlflow_uri: str,
-    parent_run_id: str,
-    max_general_ppl_increase: float = 0.05,
-) -> str:
-    import math
-    import torch
-    import mlflow
-    from datasets import load_from_disk
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+# 2) 비밀값 (파이프라인이 도는 Kubeflow 사용자 네임스페이스)
+cp pipelines/k8s/secret.example.yaml /tmp/llm-ft-secrets.yaml   # SLACK_WEBHOOK_URL 등 채우기
+kubectl -n <사용자-네임스페이스> apply -f /tmp/llm-ft-secrets.yaml
 
-    mlflow.set_tracking_uri(mlflow_uri)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    def compute_ppl(model_path: str, texts: list[str]) -> float:
-        tok = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path, torch_dtype=torch.bfloat16
-        ).to(device).eval()
-        losses = []
-        with torch.no_grad():
-            for t in texts:
-                ids = tok(t, return_tensors="pt", truncation=True, max_length=1024).input_ids.to(device)
-                if ids.size(1) < 2:
-                    continue
-                losses.append(model(ids, labels=ids).loss.item())
-        del model
-        torch.cuda.empty_cache()
-        return math.exp(sum(losses) / max(1, len(losses)))
-
-    ds = load_from_disk(eval_dataset.path)
-    domain_texts = ds["domain_heldout"]["text"][:100]
-    general_texts = ds["general_heldout"]["text"][:100]
-
-    base_domain_ppl = compute_ppl(base_model_id, domain_texts)
-    cpt_domain_ppl = compute_ppl(cpt_model.path, domain_texts)
-    base_gen_ppl = compute_ppl(base_model_id, general_texts)
-    cpt_gen_ppl = compute_ppl(cpt_model.path, general_texts)
-
-    domain_drop_ratio = (base_domain_ppl - cpt_domain_ppl) / base_domain_ppl
-    gen_inc_ratio = (cpt_gen_ppl - base_gen_ppl) / base_gen_ppl
-
-    with mlflow.start_run(run_id=parent_run_id):
-        with mlflow.start_run(run_name="gate_2_cpt_eval", nested=True):
-            mlflow.log_metrics({
-                "base_domain_ppl": base_domain_ppl,
-                "cpt_domain_ppl": cpt_domain_ppl,
-                "domain_ppl_drop_ratio": domain_drop_ratio,
-                "general_ppl_inc_ratio": gen_inc_ratio,
-            })
-            passed = (domain_drop_ratio >= 0.15) and (gen_inc_ratio <= max_general_ppl_increase)
-            status = "PASS" if passed else "FAIL"
-            mlflow.set_tag("gate_2_status", status)
-            return status
-
-
-# ------------------------------------------------------------------------------
-# Gate 3: SFT 종료 토큰(stop_rate) 및 응답 형식 검증
-# ------------------------------------------------------------------------------
-@dsl.component(base_image=BASE_IMAGE)
-def eval_sft_gate(
-    sft_model: Input[Model],
-    eval_dataset: Input[Dataset],
-    mlflow_uri: str,
-    parent_run_id: str,
-    min_stop_rate: float = 0.95,
-) -> str:
-    import torch
-    import mlflow
-    from datasets import load_from_disk
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    mlflow.set_tracking_uri(mlflow_uri)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    tok = AutoTokenizer.from_pretrained(sft_model.path)
-    model = AutoModelForCausalLM.from_pretrained(
-        sft_model.path, torch_dtype=torch.bfloat16
-    ).to(device).eval()
-
-    stop_ids = [tok.eos_token_id]
-    im_end_id = tok.convert_tokens_to_ids("<|im_end|>")
-    if isinstance(im_end_id, int) and im_end_id != tok.unk_token_id:
-        stop_ids.append(im_end_id)
-
-    ds = load_from_disk(eval_dataset.path)["sft_eval"]
-    stopped_count = 0
-    lengths = []
-
-    with torch.no_grad():
-        for row in ds:
-            prompt = tok.apply_chat_template(
-                [{"role": "user", "content": row["question"]}],
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            inputs = tok(prompt, return_tensors="pt").to(device)
-            out = model.generate(
-                **inputs,
-                max_new_tokens=512,
-                do_sample=False,
-                eos_token_id=stop_ids,
-            )
-            gen_ids = out[inputs.input_ids.shape:]
-            if int(gen_ids[-1].item()) in stop_ids:
-                stopped_count += 1
-            lengths.append(len(gen_ids))
-
-    stop_rate = stopped_count / max(1, len(ds))
-    avg_len = sum(lengths) / max(1, len(lengths))
-
-    with mlflow.start_run(run_id=parent_run_id):
-        with mlflow.start_run(run_name="gate_3_sft_eval", nested=True):
-            mlflow.log_metrics({"sft_stop_rate": stop_rate, "sft_avg_gen_len": avg_len})
-            passed = (stop_rate >= min_stop_rate) and (20 <= avg_len <= 480)
-            status = "PASS" if passed else "FAIL"
-            mlflow.set_tag("gate_3_status", status)
-            return status
-
-
-# ------------------------------------------------------------------------------
-# Gate 4: DPO LLM-as-a-Judge 승률 및 응답 길이 편향(Verbosity Bias) 검증
-# ------------------------------------------------------------------------------
-@dsl.component(base_image=BASE_IMAGE)
-def eval_dpo_judge_gate(
-    sft_model: Input[Model],
-    dpo_model: Input[Model],
-    eval_dataset: Input[Dataset],
-    mlflow_uri: str,
-    parent_run_id: str,
-    min_win_rate: float = 0.55,
-    max_len_increase_ratio: float = 0.20,
-) -> str:
-    import json
-    import random
-    import torch
-    import mlflow
-    from openai import OpenAI
-    from datasets import load_from_disk
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    mlflow.set_tracking_uri(mlflow_uri)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    ds = load_from_disk(eval_dataset.path)["dpo_eval"].select(range(50))
-
-    def generate_answers(model_path: str, questions: list[str]) -> list[str]:
-        tok = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path, torch_dtype=torch.bfloat16
-        ).to(device).eval()
-        answers = []
-        with torch.no_grad():
-            for q in questions:
-                prompt = tok.apply_chat_template(
-                    [{"role": "user", "content": q}],
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                inputs = tok(prompt, return_tensors="pt").to(device)
-                out = model.generate(**inputs, max_new_tokens=512, do_sample=False)
-                ans = tok.decode(out[inputs.input_ids.shape:], skip_special_tokens=True)
-                answers.append(ans.strip())
-        del model
-        torch.cuda.empty_cache()
-        return answers
-
-    questions = [row["question"] for row in ds]
-    sft_answers = generate_answers(sft_model.path, questions)
-    dpo_answers = generate_answers(dpo_model.path, questions)
-
-    # 위치 편향(Position Bias) 방지를 위해 A/B 순서를 무작위로 섞어 LLM 심판관 채점
-    client = OpenAI()
-    JUDGE_PROMPT = """다음 질문에 대한 두 AI 답변(A, B)의 정확성, 명확성, 환각 여부를 비교 평가하라.
-더 우수한 답변을 선택하여 반드시 JSON 형식으로만 출력하라: {{"winner": "A" | "B" | "TIE"}}
-
-[질문] {question}
-[답변 A] {ans_a}
-[답변 B] {ans_b}"""
-
-    dpo_wins, ties = 0, 0
-    for q, sft_ans, dpo_ans in zip(questions, sft_answers, dpo_answers):
-        swap = random.choice([True, False])
+# 3) 서빙 · 심판 · 권한 (rbac.yaml 의 ServiceAccount/네임스페이스를 환경에 맞게 고친다)
+kubectl apply -f pipelines/k8s/rbac.yaml -f pipelines/k8s/vllm-serving.yaml -f pipelines/k8s/judge-vllm.yaml
+kubectl -n llm-serving create secret generic model-store \
+  --from-literal=AWS_ACCESS_KEY_ID=... --from-literal=AWS_SECRET_ACCESS_KEY=... \
+  --from-literal=S3_ENDPOINT_URL=http://minio-service.kubeflow.svc.cluster.local:9000   # KFP artifact store 를 읽을 권한
 ```
 
-• 전체 조립 코드 (pipeline.py) 및 dsl.ExitHandler + dsl.If 연결 예시
+#### 2. 컴파일 및 실행 ####
 
-• 학습 컴포넌트 (train_llm.py) 또는 배포 컴포넌트 (deploy.py) 구현
+```bash
+pip install -r requirements-pipeline.txt
+export PIPELINE_IMAGE=<레지스트리>/llm-ft-pipeline:v1
+export GPU_NODE_SELECTOR=node.kubernetes.io/instance-type=g6e.4xlarge     # 선택
+
+python -m pipelines.pipeline                                  # → pipelines/llm_ft_pipeline.yaml (UI 에 업로드해도 됨)
+python -m pipelines.pipeline --run --host https://<kubeflow>/pipeline \
+  --param min_valid_count=3000 --param mlflow_uri=http://mlflow.mlflow:5000
+```
+
+#### 3. 임계값만 바꿔 다시 돌리기 (캐시 확인) ####
+
+```bash
+python -m pipelines.pipeline --run --host ... --param min_valid_count=3000 --param min_win_rate=0.5
+```
+
+KFP UI 에서 `train-*`, `eval-*` 가 **cached** 로 표시되고 `gate-*` 만 다시 도는지 확인한다.
+
+#### 4. 클러스터 없이 검사 ####
+
+```bash
+python -m pipelines.selftest          # 관문 판정·PII·MLflow 계층·심판 승률·롤백 로직 (33개 검사)
+```
+
+
+
+
+
 
 • 방금 짚어드린 eval_gates.py의 버그 수정 및 잘린 뒷부분 완성
