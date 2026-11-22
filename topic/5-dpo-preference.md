@@ -12,6 +12,9 @@ SFT 모델을 선호도에 맞춘 모델로 고도화하는 방법은 크게 두
 * RLHF (기존 방식): 선호도 데이터를 바탕으로 먼저 '보상 모델(채점기)'을 만든 뒤, PPO 강화학습을 통해 모델이 높은 보상을 받도록 훈련한다. 초기 ChatGPT와 InstructGPT에 사용된 정석적인 방식이다.
 * DPO (최신 방식): 별도의 보상 모델이나 복잡한 강화학습 없이, 선호도 데이터 쌍(chosen vs rejected)만으로 마치 분류 문제를 풀듯 모델을 직접 학습시킨다. 2023년 Rafailov 등이 제안한 방식으로, RLHF와 동일한 목표를 훨씬 단순하고 효율적으로 달성한다
 
+![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/preference-align.jpg)
+
+
 ### 2. 선호 데이터 만들기 ###
 
 * https://github.com/gnosia93/kf-llm-pipeline/blob/main/src/dpo/build_pref.py
