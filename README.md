@@ -1,5 +1,6 @@
 _This workshop is under construction, Not fully implemented yet ..._
 
+### Building a Domain-Specific LLM from Scratch: CPT, SFT, DPO & Kubeflow Pipelines ###
 
 ![](https://github.com/gnosia93/llm-train-ft/blob/main/images/llm-pipeline.jpg)
 
