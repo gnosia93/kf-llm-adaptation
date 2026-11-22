@@ -2,9 +2,7 @@
 
 SFT(지도 미세조정) 단계에서는 이미 사전학습된 모델의 기존 지식을 망가뜨리지 않으면서 새로운 대화 형식만 부드럽게 입혀야 하므로, 훈련 전 과정에 걸쳐 **학습률(Learning Rate)의 보폭을 정교하게 조절**하는 것이 핵심이다.
 
-![Cosine Learning Rate Scheduler 그래프](여기에_이미지_경로_입력)
-
----
+![](https://github.com/gnosia93/llm-train-ft/blob/main/images/lr-schedule.jpg)
 
 ### 1. `warmup_steps=0.03` (초반 3% 워밍업 구간)
 * **역할:** 훈련이 시작되는 전체 스텝의 처음 **3% 구간** 동안 학습률을 `0`에서부터 설정한 최대 학습률(Peak LR)까지 서서히 선형으로 끌어올린다. *(최신 Hugging Face `TrainingArguments`에서는 `1` 미만의 소수점을 입력하면 전체 스텝 대비 비율로 자동 계산된다.)*
