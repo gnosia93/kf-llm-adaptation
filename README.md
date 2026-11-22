@@ -18,4 +18,4 @@
 * [LR Schedule & Weight Decay](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a2-lr-schedule.md)
 * [딥러닝 트러블슈팅 가이드](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
    * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
-* [Reward Model(보상/채점 모델) 만들기]() 
+* [Reward Model(보상/채점 모델) 만들기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a4-reward-model.md) 
