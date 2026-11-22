@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""대화형 모델 비교: Instruct 원본 vs Chat Vector vs CPT+SFT (data/eval/sft_eval.jsonl, 06_build_sft.py 가 만듦).
+"""대화형 모델 비교: Instruct 원본 vs Chat Vector vs CPT+SFT (data/eval/sft_eval.jsonl, build_sft.py 가 만듦).
 
   python eval_sft.py                                   # 기본 3개 모델 (없는 경로는 건너뜀)
   python eval_sft.py --models SFT=models/k8s-ko-sft-hf/final BASE_SFT=models/k8s-ko-base-sft-hf/final
