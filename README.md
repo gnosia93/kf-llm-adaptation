@@ -30,3 +30,4 @@ _This workshop is under construction, Not fully implemented yet ..._
 * [Model FLOPs Utilization](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a5-mfu-calc.md)
 * [kfp 구성요소](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a6-kf-pipeline.md)
 * [A100 vs H100](https://github.com/gnosia93/kf-llm-pipeline/blob/main/topic/a7-a100_vs_h100.md)
+  * https://github.com/gnosia93/vlm-distillation/blob/main/ec2-price.md
