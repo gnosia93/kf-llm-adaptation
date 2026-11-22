@@ -2,7 +2,7 @@
 
 ### 1. MFU 의 중요성 ###
 
-**MFU(Model FLOPs Utilization)** 는 **하드웨어(GPU)가 이론적으로 낼 수 있는 최대 연산 성능(Peak FLOPs) 대비, 실제 모델 학습(순전파+역전파)에 유효하게 쓰인 연산량의 비율(%)** 을 의미한다.
+**MFU** 는 **하드웨어(GPU)가 이론적으로 낼 수 있는 최대 연산 성능(Peak FLOPs) 대비, 실제 모델 학습(순전파+역전파)에 유효하게 쓰인 연산량의 비율(%)** 을 의미한다.
 
 \[\text{MFU (\%)} = \frac{\text{실제 달성한 모델 연산량 (Achieved TFLOPs/s)}}{\text{GPU 스펙상 이론 최대 연산량 (Peak TFLOPs/s)}} \times 100\]
 
