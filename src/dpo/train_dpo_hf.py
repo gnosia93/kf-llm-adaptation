@@ -4,7 +4,7 @@
   python train_dpo_hf.py                 # LoRA (기본). 참조 모델 = 어댑터를 끈 같은 모델 → 메모리 추가 없음
   python train_dpo_hf.py --beta 0.3      # 참조 모델에서 덜 멀어지게 (보수적)
 
-데이터: 08_build_pref.py 가 만든 data/pref/{train,valid}.jsonl  {"prompt", "chosen", "rejected"}
+데이터: build_pref.py 가 만든 data/pref/{train,valid}.jsonl  {"prompt", "chosen", "rejected"}
 
 DPO loss (논문: Rafailov 외, 2023)
   r(y) = β · [log π(y|x) − log π_ref(y|x)]            ← 참조 모델 대비 이 답을 얼마나 더 좋아하게 됐나 (암묵적 보상)
