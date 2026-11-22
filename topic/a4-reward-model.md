@@ -2,7 +2,7 @@
 
 **보상 모델(Reward Model)**은 SFT(지도 미세조정)가 끝난 모델이 생성한 답변의 품질을 사람 대신 자동으로 채점해 주는 **AI 심판관 모델**이다. 주로 PPO/GRPO 같은 강화학습(RLHF) 단계에서 모델에게 보상 신호를 주거나, 여러 모델의 답변 품질을 정량적으로 비교 평가할 때 사용한다.
 
-![Reward Model 아키텍처 및 학습 원리](여기에_이미지_경로_입력)
+![](https://github.com/gnosia93/llm-train-ft/blob/main/images/reward-model.jpg)
 
 ---
 
