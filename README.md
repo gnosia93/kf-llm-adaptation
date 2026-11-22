@@ -6,6 +6,11 @@ _This workshop is under construction, Not fully implemented yet ..._
 
 This workshop does not treat model training and MLOps as separate disciplines. Its goal is for one person to understand the entire process: building the data, training, evaluating, automating, and deploying the model.
 
+* End-to-End LLM Post-Training: CPT → SFT → DPO 전 주기 도메인 특화 모델 구축
+* MLOps & Orchestration: Kubeflow Pipelines (KFP) 기반 학습·평가 자동화
+* GPU & Performance Optimization: LoRA, MFU 분석 및 대규모 GPU 트러블슈팅
+
+
 ![](https://github.com/gnosia93/llm-train-ft/blob/main/images/llm-pipeline.jpg)
 
 * [C0. 환경설정]
