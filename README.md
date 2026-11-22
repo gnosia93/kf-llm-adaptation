@@ -13,7 +13,7 @@ _This workshop is under construction, Not fully implemented yet ..._
 
 * [C5. 3단계 - DPO (선호도 정렬)](https://github.com/gnosia93/llm-pipeline/blob/main/topic/5-dpo-preference.md)
 
-* [C6. Pipeline]()
+* [C6. Pipeline](https://github.com/gnosia93/llm-pipeline/blob/main/topic/6-pipeline.md)
 
 
 ### Appendix ###
