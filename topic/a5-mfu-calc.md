@@ -23,11 +23,10 @@
 | **3. 메모리 대역폭 & 커널**<br>*(Memory-Bound)* | • 너무 작은 마이크로 배치 크기<br>• FlashAttention 미적용<br>• 비효율적인 파이썬/작은 커널 호출 | 연산(FLOPs)보다 VRAM에서 데이터를 읽고 쓰는 시간(Memory Bandwidth)이 더 오래 걸림 | • **FlashAttention-2/3** 적용<br>• 커널 퓨전(`torch.compile`)<br>• 최적 마이크로 배치 확보 |
 | **4. 파이프라인 & 낙오자**<br>*(Bubbles & Stragglers)* | • 파이프라인 병렬화(PP)의 유휴 구간(Bubble)<br>• 특정 노드의 과열·하드웨어 저하(Straggler)<br>• CPU 토크나이징 병목 | 가장 느린 GPU 1장이 끝날 때까지 나머지 수십 장의 GPU가 동기화 지점(`Barrier`)에서 대기 | • 3D 병렬화(TP/PP/DP) 비율 최적화<br>• **DCGM** 기반 불량 노드 격리<br>• 데이터 사전 토크나이징 |
 
----
 
-## 3. 정확한 Step Time 계측 및 병목 프로파일링 코드
+### 3. 정확한 Step Time 계측 및 병목 프로파일링 코드 ###
 
-### ① CUDA 이벤트 기반 정밀 Step Time 측정 (`torch.cuda.Event`)
+#### ① CUDA 이벤트 기반 정밀 Step Time 측정 (`torch.cuda.Event`) ####
 파이썬 `time.time()`은 CPU-GPU 비동기 실행 때문에 부정확하므로 반드시 CUDA 하드웨어 타이머로 측정한다.
 
 ```python
@@ -51,7 +50,7 @@ def measure_accurate_step_time(train_step_fn, batch, warmup_steps=3, measure_ste
     return (start_event.elapsed_time(end_event) / 1000.0) / measure_steps
 ```
 
-### ② PyTorch 내장 프로파일러 (`torch.profiler`)로 병목 커널 추적
+#### ② PyTorch 내장 프로파일러 (`torch.profiler`)로 병목 커널 추적 ####
 2~3스텝만 캡처하여 **연산 커널(GEMM) vs NCCL 통신 커널(`ncclKernel`) vs CPU DataLoader 대기 시간** 비율을 확인한다.
 
 ```python
@@ -87,7 +86,7 @@ def run_with_pytorch_profiler(model, dataloader, optimizer, trace_dir="./log/pro
     print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
 ```
 
-### ③ NVIDIA Nsight Systems (`nsys`) CLI 프로파일링
+#### ③ NVIDIA Nsight Systems (`nsys`) CLI 프로파일링 ####
 코드 수정 없이 실행 명령어 앞단에 붙여 InfiniBand RDMA 및 NVMe 하드웨어 레벨 타임라인을 캡처한다.
 
 ```bash
@@ -98,8 +97,6 @@ nsys profile \
   --output=70b_multinode_rank0 \
   torchrun --nproc_per_node=8 --nnodes=8 train.py
 ```
-
----
 
 ## 4. 학습 로그 및 실측 Step Time 기반 MFU 산출 코드 (`calc_mfu.py`)
 
