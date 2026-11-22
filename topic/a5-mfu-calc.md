@@ -2,10 +2,10 @@
 
 ### 1. MFU 의 중요성 ###
 
-![](https://github.com/gnosia93/llm-pipeline/blob/main/images/mfu-formula.jpg)
-
 * **이론 최대치 기준:** H100 SXM5(BF16 Dense) 기준 **`989 TFLOPs`**, A100 SXM(BF16) 기준 **`312 TFLOPs`**를 분모로 삼는다.
 * **현업 표준 구간:** 잘 튜닝된 멀티 노드 분산 학습의 MFU는 보통 **`45% ~ 55%`** 수준이며, 네트워크나 스토리지 병목이 있으면 **`10% ~ 20%`대** 로 추락한다.
+
+![](https://github.com/gnosia93/llm-pipeline/blob/main/images/mfu-formula.jpg)
 
 1. **`nvidia-smi` 지표의 착시 해결:** 터미널에서 `nvidia-smi`를 쳤을 때 `GPU-Util 100%`가 찍혀도, 실제로는 GPU 코어가 네트워크 통신이나 메모리 대기를 하느라 공회전하고 있을 수 있다. **MFU만이 "비싼 GPU가 진짜 모델 학습에 얼마나 알차게 일했는가"를 보여주는 유일한 진실 지표**다.
 2. **직접적인 TCO(총소유비용) 및 출시 일정(Time-to-Train) 결정:** MFU가 `15%`에서 `50%`로 오르면 동일한 클러스터에서 학습 속도가 **3.3배 빨라지고, 100만 토큰당 학습 비용이 약 70% 절감**된다.
