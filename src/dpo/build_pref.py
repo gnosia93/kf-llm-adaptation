@@ -7,8 +7,9 @@
                      --judge heuristic  모델 없이 계산 (기준 답변과 글자 bigram 겹침 + 종료/반복 감점). 약한 대용품
   단계 3 pairs     최고점 답 = chosen, 최저점 답 = rejected (점수 차가 --min-margin 이상인 것만)
 
-  # 터미널 1 (vLLM, 모듈 8.4 참고). SFT 모델(약 7GB)과 같이 GPU 에 올라가도록 메모리를 줄인다
+  # 터미널 1 - SFT 모델(약 7GB)과 같이 GPU 에 올라가도록 메모리를 줄인다
   vllm serve Qwen/Qwen2.5-7B-Instruct --max-model-len 8192 --gpu-memory-utilization 0.55
+  
   # 터미널 2
   python 08_build_pref.py                         # generate → judge(api) → pairs
   python 08_build_pref.py --stage judge           # 후보는 그대로 두고 다시 채점만
