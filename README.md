@@ -2,6 +2,9 @@ _This workshop is under construction, Not fully implemented yet ..._
 
 ## Building a Domain-Specific LLM from Scratch: CPT, SFT, DPO & Kubeflow Pipelines ##
 
+`kf-llm-pipeline` is an end-to-end hands-on workshop for building a Kubernetes domain-specific LLM and automating the workflow with Kubeflow Pipelines (KFP). You will walk through the complete model adaptation and post-training lifecycle—from data preprocessing and Continued Pre-Training (CPT) to Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO)—and package the entire process into a reproducible MLOps pipeline.
+
+
 ![](https://github.com/gnosia93/llm-train-ft/blob/main/images/llm-pipeline.jpg)
 
 * C1. 환경설정
