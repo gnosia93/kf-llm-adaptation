@@ -1,6 +1,6 @@
 ## Kubeflow Pipelines (KFP v2) ##
 
-**데이터 전처리 → CPT(연속 사전학습) → SFT(지도 미세조정) → DPO(선호도 정렬) → vLLM 무중단 추론 배포** 로 이어지는 3B 모델 파이프라인을 **Kubeflow Pipelines (KFP v2)**로 자동화하고, 각 단계 사이에 **자동화된 품질 관문(Quality Gate)**, **MLflow 계층형 트래킹 및 Model Registry Alias 배포**, 그리고 **실패 시 Slack 알림(`dsl.ExitHandler`)** 발송을 하는 방법에 대해서 다룬다.
+데이터 전처리 → CPT(연속 사전학습) → SFT(지도 미세조정) → DPO(선호도 정렬) → vLLM 무중단 추론 배포 로 이어지는 3B 모델 파이프라인을 **Kubeflow Pipelines (KFP v2)** 로 자동화하고, 각 단계 사이에 자동화된 품질 관문(Quality Gate), MLflow 계층형 트래킹 및 Model Registry Alias 배포, 그리고 실패 시 Slack 알림(`dsl.ExitHandler`) 발송을 하는 방법에 대해서 다룬다.
 
 ### 1. 전체 파이프라인 아키텍처 ###
 
