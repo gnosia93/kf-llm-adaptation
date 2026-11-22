@@ -101,26 +101,18 @@ nohup python train_dpo_hf.py > logs/train_dpo.log 2>&1 &
 * `eval_loss` | valid 쌍의 DPO loss | 0.693(= log 2) 에서 내려감. 다시 오르면 과적합 |
 
 
-## 7.4 경로 B — RLHF: 보상 모델 + PPO
+### 4. RLHF: 보상 모델 + PPO ###
 
-### (1) 보상 모델 (`train_rm_hf.py`)
+#### 보상 모델 (`train_rm_hf.py`) ####
 
 (질문, 답변) → **점수 하나**를 내는 모델이다. SFT 모델 위에 `Linear(2048 → 1)` 점수 헤드를 얹고 같은 선호 쌍으로 학습한다.
-
-```
-loss = −log σ( RM(x, chosen) − RM(x, rejected) )        (Bradley-Terry 모델)
-```
 
 ```bash
 nohup python train_rm_hf.py > logs/train_rm.log 2>&1 &
 ```
-
 확인할 값은 **`eval_accuracy`** (valid 쌍에서 chosen 점수가 더 높은 비율) 다. 0.5 면 동전 던지기고, 0.7 이상이면 PPO 에 쓸 만하다.
-**보상 모델이 틀리는 만큼 PPO 는 그 틀린 방향으로 정책을 민다.** RM 품질이 PPO 결과의 상한이다.
 
-### (2) PPO 의 구성
-
-TRL 1.x 에서는 `PPOTrainer` 가 빠졌다 (TRL 1.18.2 에서 확인). 그래서 핵심 루프를 `train_ppo.py` 에 직접 구현했다 (약 300줄).
+#### PPO 의 구성 ####
 
 | 역할 | 모델 | 학습 | 메모리 |
 |---|---|---|---|
@@ -131,7 +123,7 @@ TRL 1.x 에서는 `PPOTrainer` 가 빠졌다 (TRL 1.18.2 에서 확인). 그래�
 
 원래 PPO 는 모델 4개(정책, 참조, 가치, 보상)를 따로 올린다. 3B 를 L40S 1장에 올리기 위해 정책·참조·가치가 가중치를 공유한다.
 
-### (3) 한 스텝의 흐름
+#### 한 스텝의 흐름 ####
 
 ```
 ① rollout    질문 32개 → 정책이 답변 샘플링 (temperature 1)
@@ -144,103 +136,12 @@ TRL 1.x 에서는 `PPOTrainer` 가 빠졌다 (TRL 1.18.2 에서 확인). 그래�
               가치 loss = ½(V − return)²
 ```
 
-핵심 코드 (`train_ppo.py` 에서 발췌):
-
-```python
-# ③ 토큰 보상: KL 벌점 + 마지막 토큰에 RM 점수
-kl = (logp - ref_logp) * mask
-rewards = -a.kl_coef * kl
-rewards[torch.arange(B), last] += scores
-
-# ④ GAE (γ=1, λ=0.95): 뒤에서부터 누적
-for t in reversed(range(R)):
-    next_v = values[:, t + 1] if t + 1 < R else 0
-    delta = rewards[:, t] + a.gamma * next_v - values[:, t]
-    lastgae = delta + a.gamma * a.lam * lastgae
-    adv[:, t] = lastgae
-
-# ⑤ clipped 정책 loss
-ratio = torch.exp(logp - b["old_logp"][i])
-pg = torch.max(-adv * ratio, -adv * ratio.clamp(1 - a.cliprange, 1 + a.cliprange))
-```
-
-**참조 모델 계산** 은 `with self.policy.disable_adapter():` 한 줄이다. LoRA 를 끄면 학습 전 SFT 모델과 정확히 같다.
-
-### (4) 실행과 로그
-
 ```bash
 nohup python train_ppo.py > logs/train_ppo.log 2>&1 &      # 100 스텝 x 질문 32개
 tail -f logs/train_ppo.log
 ```
 
-```
-step   10  score +0.412  kl 1.873  len 143  eos 97%  clipfrac 0.14  vf 0.083  41.2s
-```
 
-(위 줄은 로그 형식 예시이며 3B 실측값이 아니다. 스텝당 시간도 **아직 측정하지 않았다**.)
-
-| 값 | 의미 | 정상 / 위험 신호 |
-|---|---|---|
-| `score` | RM 점수 평균 | 천천히 오름 |
-| `kl` | 답변 하나당 Σ(log π − log π_ref) | 천천히 오름. **수십 이상으로 급증하면** 정책이 SFT 에서 멀리 벗어남 → `--kl-coef` ↑ |
-| `len` | 답변 토큰 수 | **score 와 함께 급증하면 길이 해킹** |
-| `eos` | 끝까지 답한 비율 | 100% 근처 유지 |
-| `clipfrac` | ratio 가 clip 된 비율 | 0.1~0.3. 0.5 이상이면 lr ↓ |
-
-10 스텝마다 답변 하나를 출력한다. **score 가 오르는데 답이 이상해지면 보상 해킹이다.**
-
-### (5) 구현 검증
-
-`train_ppo.py` 는 직접 만든 코드라서 Mac CPU 에서 Qwen2.5-0.5B-Instruct 로 두 가지를 확인했다.
-
-1. **log π 일관성:** rollout 직후 업데이트 전에 다시 계산한 log π 가 rollout 때 값과 같아야 한다 (ratio = 1).
-   왼쪽 padding 된 질문 + 오른쪽 padding 된 답변에 `position_ids` 를 직접 주지 않으면 여기서 어긋난다.
-2. **보상을 실제로 높이는가:** RM 대신 "짧을수록 좋음" 보상을 넣고 25 스텝 돌려 score 가 오르고 답이 짧아지는지 봤다.
-
-결과는 [강사용 가이드](00_facilitator.md#ppo-구현-검증) 에 적어 두었다.
-
-## 7.5 평가: SFT vs DPO vs PPO
-
-모듈 6 의 평가 스크립트에 RM 점수와 답변 길이를 함께 본다.
-
-```bash
-python 07_eval_sft.py --models SFT=models/k8s-ko-sft-hf/final DPO=models/k8s-ko-dpo-hf/final \
-  PPO=models/k8s-ko-ppo-hf/final --reward-model models/k8s-ko-rm-hf/final
-```
-
-| 지표 | SFT | DPO | PPO |
-|---|---|---|---|
-| ppl glossary_heldout | | | |
-| ppl general_heldout | | | |
-| stop rate | | | |
-| answer len (글자) | | | |
-| RM score | | | |
-
-해석 가이드:
-
-| 관찰 | 의미 | 다음 행동 |
-|---|---|---|
-| RM score ↑, ppl·답변 품질 유지 | ✅ 선호 학습 성공 | 모듈 8 |
-| RM score 만 ↑, 답이 길어지거나 이상해짐 | 보상 해킹 (RM 의 약점을 파고듦) | `--kl-coef` ↑, 스텝 ↓, 선호 데이터의 길이 편향 점검 |
-| `ppl glossary_heldout` 이 크게 ↑ | 선호 학습이 CPT 지식을 흐림 | lr ↓, β ↑ (DPO) / kl-coef ↑ (PPO) |
-| DPO 와 PPO 의 차이가 거의 없음 | 흔한 결과. 같은 선호 데이터에서 나온 같은 목표 | 비용이 싼 DPO 를 쓴다 |
-
-> RM score 는 PPO 가 직접 최적화한 값이라 PPO 에 유리하다. **학습에 쓴 RM 으로만 평가하면 안 된다.**
-> 생성 결과를 직접 읽고(과제 6-2 의 채점표), 가능하면 심판 LLM 으로 따로 채점한다.
-
-## 7.6 DPO vs PPO 정리
-
-| | DPO | PPO (RLHF) |
-|---|---|---|
-| 필요한 것 | 선호 쌍 | 선호 쌍 → 보상 모델 → 강화학습 |
-| 학습 데이터 | 고정 (오프라인) | 매 스텝 정책이 새로 생성 (온라인) |
-| 메모리·시간 | SFT 와 비슷 | 생성이 들어가서 몇 배 느림 |
-| 하이퍼파라미터 | β, lr | kl_coef, clip, lr, vf_coef, λ ... |
-| 장점 | 단순하고 안정적 | 학습 중 새 답을 탐색. RM 을 다른 데이터로 재사용 |
-| 위험 | 선호 데이터 밖으로 일반화가 약함 | 보상 해킹, 불안정 |
-
-최근에는 PPO 대신 가치 모델이 없는 **GRPO**, **RLOO** 같은 온라인 방법도 많이 쓴다 (TRL 1.x 에 `GRPOTrainer`, `RLOOTrainer` 가 있다).
-같은 질문에 답 여러 개를 생성해 **그 묶음의 평균 점수를 기준선**으로 쓴다. 정답을 자동으로 확인할 수 있는 과제(수학, 코드)에 특히 잘 맞는다.
 
 ---
 
