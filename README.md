@@ -2,7 +2,7 @@ _This workshop is under construction, Not fully implemented yet ..._
 
 ## LLM adaptation from CPT to DPO with Kubeflow ##
 
-`kf-llm-pipeline` is an end-to-end hands-on workshop for building a Kubernetes domain-specific LLM and automating the workflow with Kubeflow Pipelines (KFP). You will walk through the complete model adaptation and post-training lifecycle—from data preprocessing and Continued Pre-Training (CPT) to Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO)—and package the entire process into a reproducible MLOps pipeline.
+`kf-llm-adaptation` is an end-to-end hands-on workshop for building a Kubernetes domain-specific LLM and automating the workflow with Kubeflow Pipelines (KFP). You will walk through the complete model adaptation and post-training lifecycle—from data preprocessing and Continued Pre-Training (CPT) to Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO)—and package the entire process into a reproducible MLOps pipeline.
 
 This workshop does not treat model training and MLOps as separate disciplines. Its goal is for one person to understand the entire process: building the data, training, evaluating, automating, and deploying the model.
 
