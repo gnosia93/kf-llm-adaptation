@@ -1,12 +1,10 @@
-# Kubeflow Pipelines (KFP v2) + MLflow 기반 LLM 3B E2E Quality Gate 파이프라인 가이드 (v3)
+## Kubeflow Pipelines (KFP v2) ##
 
-**데이터 전처리 → CPT(연속 사전학습) → SFT(지도 미세조정) → DPO(선호도 정렬) → vLLM 무중단 추론 배포**로 이어지는 3B 모델 파이프라인을 **Kubeflow Pipelines (KFP v2)**로 자동화하고, 각 단계 사이에 **자동화된 품질 관문(Quality Gate)**, **MLflow 계층형 트래킹 및 Model Registry Alias 배포**, 그리고 **실패 시 Slack 알림(`dsl.ExitHandler`)**까지 결합한 완전한 실전 MLOps 가이드다.
+**데이터 전처리 → CPT(연속 사전학습) → SFT(지도 미세조정) → DPO(선호도 정렬) → vLLM 무중단 추론 배포** 로 이어지는 3B 모델 파이프라인을 **Kubeflow Pipelines (KFP v2)**로 자동화하고, 각 단계 사이에 **자동화된 품질 관문(Quality Gate)**, **MLflow 계층형 트래킹 및 Model Registry Alias 배포**, 그리고 **실패 시 Slack 알림(`dsl.ExitHandler`)** 발송을 하는 방법에 대해서 다룬다.
 
----
+### 1. 전체 파이프라인 및 Quality Gate 아키텍처 ###
 
-## 1. 전체 파이프라인 및 Quality Gate 아키텍처
-
-핵심 설계 원칙은 **학습(Train) 컴포넌트와 평가(Eval/Gate) 컴포넌트를 물리적으로 분리**하는 것이다. 이를 통해 KFP의 **Step Caching** 기능을 극대화하여, Gate 임계값이나 평가 기준을 수정할 때 무거운 GPU 학습을 다시 돌리지 않고 평가 단계만 1분 내에 재실행할 수 있다.
+핵심 설계 원칙은 **학습(Train) 컴포넌트와 평가(Eval/Gate) 컴포넌트를 물리적으로 분리** 하는 것이다. 이를 통해 KFP의 **Step Caching** 기능을 극대화하여, Gate 임계값이나 평가 기준을 수정할 때 무거운 GPU 학습을 다시 돌리지 않고 평가 단계만 1분 내에 재실행할 수 있다.
 
 ```text
 [dsl.ExitHandler: 파이프라인 종료 시 성공/실패 및 실패 Gate 자동 Slack 알림]
