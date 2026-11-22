@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """대화형 모델 비교: Instruct 원본 vs Chat Vector vs CPT+SFT (data/eval/sft_eval.jsonl, 06_build_sft.py 가 만듦).
 
-  python 07_eval_sft.py                                   # 기본 3개 모델 (없는 경로는 건너뜀)
-  python 07_eval_sft.py --models SFT=models/k8s-ko-sft-hf/final BASE_SFT=models/k8s-ko-base-sft-hf/final
+  python eval_sft.py                                   # 기본 3개 모델 (없는 경로는 건너뜀)
+  python eval_sft.py --models SFT=models/k8s-ko-sft-hf/final BASE_SFT=models/k8s-ko-base-sft-hf/final
 
 지표
   answer ppl  정답 답변의 perplexity (질문은 조건으로만, 답변 토큰만 계산). 낮을수록 그 답을 할 법하다고 본다
