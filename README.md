@@ -1,4 +1,4 @@
-This workshop is under construction, Not fully implemented yet ...
+_This workshop is under construction, Not fully implemented yet ..._
 
 
 ![](https://github.com/gnosia93/llm-train-ft/blob/main/images/llm-pipeline.jpg)
