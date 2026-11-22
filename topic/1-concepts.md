@@ -22,17 +22,16 @@ loss = −log P(정답 토큰 | 앞 문맥)
 
 > **핵심:** 지식 주입이란 결국 **해당 도메인 문서에서 다음 토큰을 잘 맞히게 만드는 것** 이다.
 
-### 1.2 다섯 가지 방법 비교 ###
+### 1.2 다섯 가지 방법 비교 (LLM Adaptation) ###
 
-| | 사전학습 | **계속 사전학습 (CPT)** | 지시학습 (SFT) | 선호 학습 (DPO / PPO) | RAG |
-|---|---|---|---|---|---|
-| 목적 | 일반 언어 능력 | **도메인 지식·용어·문체** | 대화 형식, 지시 따르기 | 더 나은 답 고르기 (정확성, 간결함, 실수 줄이기) | 최신·정확한 사실 전달 |
-| 데이터 | 웹 전체 (수조 토큰) | **도메인 원문** (수백만~수억 토큰) | 질문-답변 쌍 (수천~수만 개) | 선호 쌍: 질문 + 좋은 답 + 나쁜 답 (수백~수만 개) | 검색 색인 (학습 없음) |
-| loss | 모든 토큰 | **모든 토큰** | 답변 토큰만 | 좋은 답 확률 ↑, 나쁜 답 확률 ↓ (참조 모델 대비) | — |
-| 모델 변경 | 처음부터 | 기존 가중치를 이어서 | 기존 가중치를 이어서 | SFT 모델을 이어서 | 없음 |
-| 비용 | 수백만 달러 | **GPU 1장, 수십 분~수 시간** | GPU 1장, 수십 분 | DPO 는 SFT 와 비슷, PPO 는 몇 배 (학습 중 생성) | 임베딩 + 벡터 DB |
+![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/llm_adaptation.jpg)
 
-#### CPT, SFT, DPO 의 데이터는 이렇게 다르다 ####
+#### Adapt ####
+* 새로운 용도·상황에) 맞추다[조정하다] (=modify) / These styles can be adapted to suit individual tastes.
+* (상황에) 적응하다 (=adjust) / We have had to adapt quickly to the new system.
+* (연극·영화·텔레비전 극으로) 개작하다[각색하다] / Three of her novels have been adapted for television.
+
+#### CPT, SFT, DPO 훈련 데이터 포맷 ####
 
 ```jsonc
 // CPT: 원문을 그대로. 모든 토큰이 학습 대상
