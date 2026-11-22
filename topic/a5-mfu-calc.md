@@ -2,9 +2,7 @@
 
 ### 1. MFU 의 중요성 ###
 
-**MFU** 는 **하드웨어(GPU)가 이론적으로 낼 수 있는 최대 연산 성능(Peak FLOPs) 대비, 실제 모델 학습(순전파+역전파)에 유효하게 쓰인 연산량의 비율(%)** 을 의미한다.
-
-\[\text{MFU (\%)} = \frac{\text{실제 달성한 모델 연산량 (Achieved TFLOPs/s)}}{\text{GPU 스펙상 이론 최대 연산량 (Peak TFLOPs/s)}} \times 100\]
+![](https://github.com/gnosia93/llm-pipeline/blob/main/images/mfu-formula.jpg)
 
 * **이론 최대치 기준:** H100 SXM5(BF16 Dense) 기준 **`989 TFLOPs`**, A100 SXM(BF16) 기준 **`312 TFLOPs`**를 분모로 삼는다.
 * **현업 표준 구간:** 잘 튜닝된 멀티 노드 분산 학습의 MFU는 보통 **`45% ~ 55%`** 수준이며, 네트워크나 스토리지 병목이 있으면 **`10% ~ 20%`대** 로 추락한다.
