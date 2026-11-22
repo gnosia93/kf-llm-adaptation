@@ -72,7 +72,8 @@ for p in random.sample(pairs, 3):
 심판 기준을 바꾸고 싶으면 `JUDGE_PROMPT` 를 고친 뒤 `python build_pref.py --stage judge` 로 **채점만 다시** 한다.
 
 ### 3. DPO (Direct Preference Optimization) ###
-
+* https://github.com/gnosia93/kf-llm-pipeline/blob/main/src/dpo/train_dpo_hf.py
+  
 RLHF 의 목표는 "보상은 높이되, 참조 모델(SFT)에서 너무 멀어지지 않기" 다. 이 목표의 최적해를 풀어 보면
 **정책 자체가 보상 모델 역할을 한다** 는 결론이 나온다. 그래서 보상 모델과 강화학습 없이 선호 쌍으로 바로 학습할 수 있다.
 
