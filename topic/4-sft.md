@@ -132,6 +132,8 @@ tail -f logs/train_sft.log
 
 ### 7. 모델 학습 평가하기 ###
 
+`https://github.com/gnosia93/llm-train-ft/blob/main/src/eval_sft.py`
+
 SFT 학습이 끝나면 평가 스크립트(07_eval_sft.py)를 실행해 기존 모델(INSTRUCT, CHATVEC)과 우리가 학습시킨 모델(SFT)의 성능을 비교합니다. 평가는 크게 세 가지 숫자와 실제 생성된 답변을 직접 읽어보는 방식으로 진행한다.
 먼저 숫자로 확인하는 세 가지 핵심 지표는 다음과 같습니다.
 * 미학습 용어 시험 (ppl glossary_heldout): SFT 학습에서 일부러 빼두었던 18개 용어의 뜻을 얼마나 정확히 맞히는지 봅니다. 이 숫자는 낮을수록 좋으며, 기존 모델(INSTRUCT)보다 크게 낮아져야 지식을 잘 꺼내 쓴다는 뜻이다.
