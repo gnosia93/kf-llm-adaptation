@@ -1,0 +1,39 @@
+# deploy-vllm 단계가 서빙 네임스페이스의 Deployment 를 읽고 교체할 수 있게 한다.
+# subjects 의 ServiceAccount 는 파이프라인 pod 가 쓰는 계정이다.
+#   Kubeflow 멀티유저: <사용자 네임스페이스> 의 default-editor
+#   단일 사용자(standalone KFP): kubeflow 네임스페이스의 pipeline-runner
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm-serving
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: llm-ft-deployer
+  namespace: llm-serving
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["k8s-ko-vllm"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: llm-ft-deployer
+  namespace: llm-serving
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: llm-ft-deployer
+subjects:
+  - kind: ServiceAccount
+    name: default-editor              # ← 환경에 맞게
+    namespace: kubeflow-user-example-com   # ← 파이프라인이 도는 네임스페이스

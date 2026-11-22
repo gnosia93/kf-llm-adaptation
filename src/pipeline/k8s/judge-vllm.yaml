@@ -1,0 +1,50 @@
+# 심판 LLM (선호 데이터 채점 + Gate 4 승률). 파이프라인 파라미터 judge_api_base 가 이 Service 를 가리킨다.
+# Qwen2.5-7B-Instruct (Apache-2.0). GPU 1장. 파이프라인을 돌릴 때만 replicas: 1 로 올려도 된다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: judge-vllm
+  namespace: llm-serving
+  labels: {app: judge-vllm}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: judge-vllm}
+  template:
+    metadata:
+      labels: {app: judge-vllm}
+    spec:
+      tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      volumes:
+        - name: dshm
+          emptyDir: {medium: Memory, sizeLimit: 8Gi}
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.34.0
+          args: ["--model", "Qwen/Qwen2.5-7B-Instruct", "--max-model-len", "8192",
+                 "--gpu-memory-utilization", "0.90", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - {name: http, containerPort: 8000}
+          resources:
+            limits: {nvidia.com/gpu: 1, memory: 40Gi}
+            requests: {cpu: "4", memory: 32Gi}
+          volumeMounts:
+            - {name: dshm, mountPath: /dev/shm}
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: judge-vllm
+  namespace: llm-serving
+spec:
+  selector: {app: judge-vllm}
+  ports:
+    - {name: http, port: 8000, targetPort: http}

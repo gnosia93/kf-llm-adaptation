@@ -1,0 +1,120 @@
+# k8s-ko 서빙: InitContainer 가 MODEL_URI 의 모델을 받고, vLLM 이 띄운다.
+# 파이프라인의 deploy-vllm 단계는 pod template 의 MODEL_URI 와 llm-ft/model-version annotation 만 바꾼다
+# → Deployment 롤링 업데이트. 무중단 조건 (deploy 단계가 시작 전에 검사한다):
+#   strategy.rollingUpdate.maxUnavailable: 0   새 pod 가 Ready 가 된 뒤에만 옛 pod 를 내린다
+#   readinessProbe /health                      모델 로딩이 끝나기 전에는 트래픽을 받지 않는다
+# 주의: 롤아웃 동안 pod 가 replicas + 1 개가 되므로 GPU 가 1장 더 있어야 한다 (maxSurge: 1).
+#
+# 처음 적용할 때는 MODEL_URI 를 hf://<모델 id> 로 두면 다운로드 없이 HF 모델로 뜬다 (첫 배포 전 자리 지킴이).
+#   kubectl apply -f pipelines/k8s/rbac.yaml -f pipelines/k8s/vllm-serving.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-ko-vllm
+  namespace: llm-serving
+  labels: {app: k8s-ko-vllm}
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 1500        # 모델 다운로드(약 6GB) + 로딩. 넘으면 ProgressDeadlineExceeded → 파이프라인이 롤백
+  minReadySeconds: 30
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels: {app: k8s-ko-vllm}
+  template:
+    metadata:
+      labels: {app: k8s-ko-vllm}
+      annotations:
+        llm-ft/model-version: "bootstrap"
+    spec:
+      terminationGracePeriodSeconds: 60     # 진행 중인 요청을 마무리할 시간
+      tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      volumes:
+        - name: model
+          emptyDir: {sizeLimit: 20Gi}
+        - name: dshm
+          emptyDir: {medium: Memory, sizeLimit: 8Gi}
+      initContainers:
+        - name: model-downloader
+          image: amazon/aws-cli:2.42.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              case "$MODEL_URI" in
+                s3://*) aws s3 cp --recursive --only-show-errors "$MODEL_URI" /models/current \
+                          ${S3_ENDPOINT_URL:+--endpoint-url "$S3_ENDPOINT_URL"}
+                        ls -la /models/current ;;
+                hf://*) echo "HF 모델 사용: ${MODEL_URI#hf://} (다운로드 생략)" ;;
+                *) echo "지원하지 않는 MODEL_URI: $MODEL_URI" >&2; exit 1 ;;
+              esac
+          env:
+            - {name: MODEL_URI, value: "hf://Qwen/Qwen2.5-3B-Instruct"}
+            - name: S3_ENDPOINT_URL
+              valueFrom: {secretKeyRef: {name: model-store, key: S3_ENDPOINT_URL, optional: true}}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: model-store, key: AWS_ACCESS_KEY_ID, optional: true}}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: model-store, key: AWS_SECRET_ACCESS_KEY, optional: true}}
+          volumeMounts:
+            - {name: model, mountPath: /models}
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.34.0          # 검증한 버전으로 고정해서 쓴다
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              M=/models/current
+              case "$MODEL_URI" in hf://*) M="${MODEL_URI#hf://}" ;; esac
+              exec vllm serve "$M" --served-model-name k8s-ko --host 0.0.0.0 --port 8000 \
+                --max-model-len 4096 --gpu-memory-utilization 0.90
+          env:
+            - {name: MODEL_URI, value: "hf://Qwen/Qwen2.5-3B-Instruct"}
+          ports:
+            - {name: http, containerPort: 8000}
+          resources:
+            limits: {nvidia.com/gpu: 1, memory: 32Gi}
+            requests: {cpu: "4", memory: 24Gi}
+          volumeMounts:
+            - {name: model, mountPath: /models}
+            - {name: dshm, mountPath: /dev/shm}
+          startupProbe:                      # 모델 로딩 동안 liveness 가 pod 를 죽이지 않게
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+            failureThreshold: 90             # 최대 15분
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 20
+            failureThreshold: 3
+          lifecycle:
+            preStop:                         # Service endpoint 에서 빠질 시간을 준 뒤 종료
+              exec: {command: ["/bin/sh", "-c", "sleep 15"]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-ko-vllm
+  namespace: llm-serving
+spec:
+  selector: {app: k8s-ko-vllm}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: k8s-ko-vllm
+  namespace: llm-serving
+spec:
+  maxUnavailable: 0                  # 노드 drain 같은 자발적 중단으로도 서비스가 비지 않게 (replicas 1 이면 drain 이 막힘에 주의)
+  selector:
+    matchLabels: {app: k8s-ko-vllm}
