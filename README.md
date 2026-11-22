@@ -15,6 +15,6 @@
 ### Appendix ###
 
 * [LoRA (Low-Rank Adaptation) 핵심 원리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a1-lora.md)
-
+* [LR Schedule & Decay](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a2-lr-schedule.md)
 * [딥러닝 트러블슈팅 가이드](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
    * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
