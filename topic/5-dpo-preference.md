@@ -26,6 +26,11 @@ B 가 InstructGPT·초기 ChatGPT 의 방식이고, A 는 B 와 같은 목표를
 
 #### (1) 파이프라인 ####
 
+![](https://github.com/gnosia93/kf-llm-pipeline/blob/main/images/dpo-data-generation.jpg)
+
+
+
+
 ```
 data/sft/train.jsonl 의 질문 1,000개 (k8s 80% + 일반 20%)
         │  ① SFT 모델로 질문마다 답 4개 샘플링 (temperature 0.9)        ← on-policy
