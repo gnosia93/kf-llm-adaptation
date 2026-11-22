@@ -75,10 +75,3 @@ KFP UI 에서 `train-*`, `eval-*` 가 **cached** 로 표시되고 `gate-*` 만 �
 ```bash
 python -m pipelines.selftest          # 관문 판정·PII·MLflow 계층·심판 승률·롤백 로직 (33개 검사)
 ```
-
-
-
-
-
-
-• 방금 짚어드린 eval_gates.py의 버그 수정 및 잘린 뒷부분 완성
