@@ -91,8 +91,8 @@ nohup python train_dpo_hf.py > logs/train_dpo.log 2>&1 &
 ```
 
 #### 로그 읽는 법 ####
-* `rewards/margins` | r(chosen) − r(rejected) 평균 | 0 에서 시작해 점점 커짐 |
-* `rewards/accuracies` | r(chosen) > r(rejected) 인 비율 | 0.5 에서 시작해 0.7~0.9 |
-* `rewards/chosen` | chosen 의 암묵적 보상 | 약간 음수까지는 흔함. 크게 음수면 chosen 확률까지 같이 떨어지는 중 |
-* `eval_loss` | valid 쌍의 DPO loss | 0.693(= log 2) 에서 내려감. 다시 오르면 과적합 |
+* `rewards/margins` : r(chosen) − r(rejected) 평균, 0 에서 시작해 점점 커짐 
+* `rewards/accuracies` : r(chosen) > r(rejected) 인 비율, 0.5 에서 시작해 0.7~0.9 
+* `rewards/chosen` : chosen 의 암묵적 보상으로 약간 음수까지는 흔함. 크게 음수면 chosen 확률까지 같이 떨어지는 중 
+* `eval_loss` : valid 쌍의 DPO loss, 0.693(= log 2) 에서 내려감. 다시 오르면 과적합 
 
