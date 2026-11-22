@@ -22,4 +22,4 @@ This workshop is under construction, Not fully implemented yet ...
 * [딥러닝 트러블슈팅 가이드](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a3-top-20.md)
    * [트러블 슈팅](https://github.com/gnosia93/llm-train-ft/blob/main/troubleshooting.md)
 * [Reward Model(보상/채점 모델) 만들기](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a4-reward-model.md) 
-* [Model Flops Utilization](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a5-mfu-calc.md)
+* [Model FLOPs Utilization](https://github.com/gnosia93/llm-pipeline/blob/main/topic/a5-mfu-calc.md)
