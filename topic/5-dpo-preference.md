@@ -31,18 +31,6 @@ B 가 InstructGPT·초기 ChatGPT 의 방식이고, A 는 B 와 같은 목표를
 
 
 
-```
-data/sft/train.jsonl 의 질문 1,000개 (k8s 80% + 일반 20%)
-        │  ① SFT 모델로 질문마다 답 4개 샘플링 (temperature 0.9)        ← on-policy
-        ▼
-data/pref/candidates.jsonl
-        │  ② 심판 LLM (Qwen2.5-7B-Instruct) 이 기준 답변을 보고 4개를 1~10점 채점
-        ▼
-        │  ③ 최고점 = chosen, 최저점 = rejected  (점수 차 2점 이상만)
-        ▼
-data/pref/{train,valid}.jsonl   {"prompt": [...], "chosen": [...], "rejected": [...]}
-        └─▶ DPO (train_dpo_hf.py) 와 보상 모델 (train_rm_hf.py) 이 같은 파일을 쓴다
-```
 
 ### 설계시 고려사항 ####
 
