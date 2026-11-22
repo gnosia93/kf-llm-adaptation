@@ -11,9 +11,9 @@
   vllm serve Qwen/Qwen2.5-7B-Instruct --max-model-len 8192 --gpu-memory-utilization 0.55
   
   # 터미널 2
-  python 08_build_pref.py                         # generate → judge(api) → pairs
-  python 08_build_pref.py --stage judge           # 후보는 그대로 두고 다시 채점만
-  python 08_build_pref.py --judge heuristic       # 심판 모델 없이 (품질 낮음)
+  python build_pref.py                         # generate → judge(api) → pairs
+  python build_pref.py --stage judge           # 후보는 그대로 두고 다시 채점만
+  python build_pref.py --judge heuristic       # 심판 모델 없이 (품질 낮음)
 
 출력:
   data/pref/candidates.jsonl   {"id", "messages"(system,user), "reference", "kind", "answers": [...], "stopped": [...], "scores": [...]}
