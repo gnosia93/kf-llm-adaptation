@@ -1,4 +1,4 @@
-![WIP](https://shields.io)
+$\color{red}{\textsf{W.I.P}}$
 
 ## LLM adaptation from CPT to DPO with Kubeflow ##
 
