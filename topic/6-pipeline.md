@@ -22,6 +22,7 @@ _under construction & not fully implemented and tested..._
 
 
 ### 3. 파이프라인 ###
+![](https://github.com/gnosia93/kf-llm-finetune/blob/main/images/kf-llm-eval-pipeline.jpg)
 
 | 파일 | 내용 |
 |---|---|
