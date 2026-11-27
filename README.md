@@ -1,4 +1,4 @@
-_This workshop is under construction, Not fully implemented yet ..._
+![WIP](https://shields.io)
 
 ## LLM adaptation from CPT to DPO with Kubeflow ##
 
