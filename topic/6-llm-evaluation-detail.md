@@ -13,7 +13,6 @@ LLM 학습 파이프라인의 각 단계(**CPT ➡️ SFT ➡️ DPO**)는 목�
 | **SFT** (Supervised Fine-Tuning) | 질문 의도 파악, 지시 이행 능력 | 정답 일치도, 태스크 수행 능력 | **ROUGE / BLEU**, **Exact Match**, **LLM-as-a-Judge** |
 | **DPO** (Direct Preference Optimization) | 선호 답변 생성, 유해성/환각 억제 | 모델 간 승률(Win-rate), 안전성 | **MT-Bench / AlpacaEval**, **Reward Score**, **NLI (환각 체크)** |
 
----
 
 ### 2. SFT 및 DPO 이후 테스트 방법
 
