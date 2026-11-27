@@ -20,9 +20,10 @@ _under construction & not fully implemented and tested..._
 | **Gate 3 (SFT)** | SFT 완료 모델 | • 종료 토큰 비율 (`stop_rate`)<br>• 평균 응답 길이 (`avg_len`) | • `stop_rate >= 0.95`<br>• `20 <= avg_len <= 480` | `<\|im_end\|>` 미생성으로 인한 무한 반복 생성 폭주 방지 |
 | **Gate 4 (DPO)** | 병합된 최종 모델 | • SFT 대비 Judge 승률 (`win_rate`)<br>• SFT 대비 응답 길이 증가율 | • `win_rate >= 0.55`<br>• 길이 증가폭 **< 20%** | 정렬 실패 또는 '길게 쓰기만 하는 편향(Verbosity Bias)' 차단 |
 
+![](https://github.com/gnosia93/kf-llm-finetune/blob/main/images/kf-llm-eval-pipeline.jpg)
+
 
 ### 3. 파이프라인 ###
-![](https://github.com/gnosia93/kf-llm-finetune/blob/main/images/kf-llm-eval-pipeline.jpg)
 
 | 파일 | 내용 |
 |---|---|
