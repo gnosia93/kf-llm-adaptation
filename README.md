@@ -26,7 +26,7 @@ This workshop does not treat model training and MLOps as separate disciplines. I
 * [C5. 3단계 - DPO (선호도 정렬)](https://github.com/gnosia93/llm-pipeline/blob/main/topic/5-dpo-preference.md)
 
 * [C6. Pipeline](https://github.com/gnosia93/llm-pipeline/blob/main/topic/6-pipeline.md)
-    - [모델 평가 상세](https://github.com/gnosia93/kf-llm-finetune/blob/main/topic/6-llm-evaluation-detail.md)
+    - [단계별 모델 평가](https://github.com/gnosia93/kf-llm-finetune/blob/main/topic/6-llm-evaluation-detail.md)
 
 ### Appendix ###
 
