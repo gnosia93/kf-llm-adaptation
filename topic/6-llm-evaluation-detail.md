@@ -2,6 +2,8 @@
 
 LLM 학습 파이프라인의 각 단계(**CPT ➡️ SFT ➡️ DPO**)는 목표가 다르기 때문에 평가 지표와 테스트 방식도 완전히 달라집니다.
 
+![](https://github.com/gnosia93/kf-llm-finetune/blob/main/images/kf-llm-eval-pipeline.jpg)
+
 
 ### 1. 학습 단계별 평가 지표 요약
 
