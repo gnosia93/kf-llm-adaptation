@@ -29,6 +29,8 @@ This workshop does not treat model training and MLOps as separate disciplines. I
 * [C6. Pipeline](https://github.com/gnosia93/llm-pipeline/blob/main/topic/6-pipeline.md)
     - [단계별 모델 평가](https://github.com/gnosia93/kf-llm-finetune/blob/main/topic/6-llm-evaluation-detail.md)
 
+* [C7. 운영 모델 배포]
+
 ### Appendix ###
 
 * [LoRA (Low-Rank Adaptation) 핵심 원리](https://github.com/gnosia93/llm-train-ft/blob/main/topic/a1-lora.md)
